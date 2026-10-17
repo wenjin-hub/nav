@@ -19,6 +19,8 @@ import {
   MenuUnfoldOutline,
   DoubleRightOutline,
   DoubleLeftOutline,
+  UserOutline,
+  LogoutOutline,
 } from '@ant-design/icons-angular/icons'
 import { provideAnimations } from '@angular/platform-browser/animations'
 import { NZ_I18N } from 'ng-zorro-antd/i18n'
@@ -44,6 +46,8 @@ const icons: IconDefinition[] = [
   MenuUnfoldOutline,
   DoubleRightOutline,
   DoubleLeftOutline,
+  UserOutline,
+  LogoutOutline,
 ]
 
 const isPhone = isMobile()

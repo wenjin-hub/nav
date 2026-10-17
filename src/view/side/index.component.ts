@@ -18,6 +18,8 @@ import { ToolbarTitleWebComponent } from 'src/components/toolbar-title/index.com
 import { WebListComponent } from 'src/components/web-list/index.component'
 import { ClassTabsComponent } from 'src/components/class-tabs/index.component'
 import { SidebarComponent } from 'src/components/sidebar/index.component'
+import { LogoComponent } from 'src/components/logo/logo.component'
+import { AccessLoginComponent } from 'src/components/access-login/index.component'
 import { filterLoginData } from 'src/utils/pureUtils'
 import { isLogin } from 'src/utils/user'
 import type { INavProps, INavThreeProp, INavTwoProp } from 'src/types'
@@ -41,6 +43,8 @@ import { debounceTime } from 'rxjs/operators'
     SwiperComponent,
     ClassTabsComponent,
     SidebarComponent,
+    LogoComponent,
+    AccessLoginComponent,
   ],
   selector: 'app-side',
   templateUrl: './index.component.html',

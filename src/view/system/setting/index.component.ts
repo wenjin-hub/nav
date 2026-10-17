@@ -40,6 +40,7 @@ import type { IComponentItemProps, IWebProps, ThemeType } from 'src/types'
 import event from 'src/utils/mitt'
 import footTemplate from 'src/components/footer/template'
 import { replaceJsdelivrCDN } from 'src/utils/pureUtils'
+import { hashAccessPwd } from 'src/utils/user'
 
 // 额外添加的字段，但不添加到配置中
 const extraForm: Record<string, any> = {
@@ -148,6 +149,10 @@ export default class SystemSettingComponent {
       ...extraForm,
       ...this.settings,
     }
+    // 确保访问密码字段存在（旧配置可能没有），避免保存设置时丢失
+    if (group['accessPwdHash'] == null) {
+      group['accessPwdHash'] = ''
+    }
     const groupPayload: any = {}
     for (const k in group) {
       groupPayload[k] = [group[k]]
@@ -163,6 +168,33 @@ export default class SystemSettingComponent {
 
   get cdnUrl(): string {
     return this.validateForm.get('gitHubCDN')?.value
+  }
+
+  // ===== 访问密码管理 =====
+  accessPwdInput = ''
+  get hasAccessPwd(): boolean {
+    return !!this.validateForm.get('accessPwdHash')?.value
+  }
+
+  async saveAccessPwd() {
+    if (this.submitting) return
+    const pwd = this.accessPwdInput.trim()
+    let hash = ''
+    if (pwd) {
+      if (pwd.length < 4) {
+        this.message.error('密码至少 4 位')
+        return
+      }
+      hash = await hashAccessPwd(pwd)
+    }
+    this.validateForm.get('accessPwdHash')!.setValue(hash)
+    await this.handleSubmit()
+    this.message.success(
+      hash
+        ? '访问密码已保存，等待网站重建后生效（约 1-3 分钟）'
+        : '访问密码已清除',
+    )
+    this.accessPwdInput = ''
   }
 
   get footTemplate(): string {

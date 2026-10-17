@@ -63,6 +63,7 @@
         <i></i>
       </div>
       <img [src]="commonService.settings().favicon" class="logo" alt="logo" />
+      <app-access-login class="header-access" />
     </div>
   </header>
 
@@ -117,6 +118,14 @@
           [attr.data-one-index]="oi"
           [attr.data-one-id]="one.id"
         >
+          <app-logo
+            *ngIf="one.icon"
+            [src]="one.icon"
+            [size]="18"
+            [radius]="4"
+            [name]="one.title"
+            class="m-one-title-icon"
+          />
           <span class="m-one-title-text">{{ one.title }}</span>
           <span class="m-one-tabs" *ngIf="one.nav.length > 1">
             <span

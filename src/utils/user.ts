@@ -67,6 +67,30 @@ export function userLogout() {
 
 export const isLogin: boolean = !!getToken()
 
+// ===== 访问密码（方案A：访客输入密码解锁「仅自己可见」内容） =====
+export const ACCESS_STORAGE_KEY = 'ACCESS_UNLOCKED'
+
+export function isAccessUnlocked(): boolean {
+  return globalThis.localStorage?.getItem(ACCESS_STORAGE_KEY) === 'true'
+}
+
+export function setAccessUnlocked(v: boolean) {
+  if (v) {
+    globalThis.localStorage.setItem(ACCESS_STORAGE_KEY, 'true')
+  } else {
+    globalThis.localStorage.removeItem(ACCESS_STORAGE_KEY)
+  }
+}
+
+// 访问密码哈希：加盐 SHA-256，hex 字符串（防路人级别）
+export async function hashAccessPwd(pwd: string): Promise<string> {
+  const data = new TextEncoder().encode('wjnav-access:' + pwd)
+  const buf = await globalThis.crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 let create: null | boolean = null
 let edit: null | boolean = null
 let del: null | boolean = null

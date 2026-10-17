@@ -1,0 +1,39 @@
+<div class="access-wrap">
+  <ng-container *ngIf="!isUnlocked; else unlockedTpl">
+    <span class="access-btn" (click)="open = true">
+      <nz-icon nzType="user" nzTheme="outline" />
+      <span class="access-btn-text">登录</span>
+    </span>
+  </ng-container>
+
+  <ng-template #unlockedTpl>
+    <span class="access-btn" (click)="logout()">
+      <nz-icon nzType="logout" nzTheme="outline" />
+      <span class="access-btn-text">退出</span>
+    </span>
+    <!-- 访问统计（解锁后可见，数据来自不蒜子） -->
+    <span class="access-stats">
+      本站访问量 <i id="busuanzi_value_site_pv">...</i> 次
+    </span>
+  </ng-template>
+
+  <!-- 登录弹窗 -->
+  <div class="access-mask" *ngIf="open" (click)="open = false"></div>
+  <div class="access-modal" *ngIf="open">
+    <div class="access-modal-title">登录</div>
+    <div class="access-modal-tip">输入访问密码查看全部内容</div>
+    <input
+      nz-input
+      type="password"
+      [(ngModel)]="pwd"
+      (keyup.enter)="submit()"
+      placeholder="请输入访问密码"
+    />
+    <div class="access-modal-actions">
+      <button nz-button (click)="open = false">取消</button>
+      <button nz-button nzType="primary" [nzLoading]="loading" (click)="submit()">
+        登录
+      </button>
+    </div>
+  </div>
+</div>

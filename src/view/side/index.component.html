@@ -6,6 +6,9 @@
   />
   <app-sidebar [scrollMode]="true" [selectedTwoMap]="selectedTwo" />
 
+  <!-- 右上角访问登录入口 -->
+  <app-access-login class="side-access-login" />
+
   <div class="inner-layout dark-bg">
     <app-swiper
       *ngIf="commonService.settings().sideThemeImages.length > 0"
@@ -103,6 +106,14 @@
                 [attr.data-one-index]="oi"
                 [attr.data-one-id]="one.id"
               >
+                <app-logo
+                  *ngIf="one.icon"
+                  [src]="one.icon"
+                  [size]="20"
+                  [radius]="4"
+                  [name]="one.title"
+                  class="one-title-icon"
+                />
                 <span class="one-title-text">{{ one.title }}</span>
                 <span class="one-tabs" *ngIf="one.nav.length > 1">
                   <span

@@ -28,7 +28,7 @@
     transition: 0.1s linear;
   }
 
-  // 一级分类大标题（参考爱达杂货铺风格，右侧挂二级标签）
+  // 一级分类大标题（参考爱达杂货铺风格，二级标签紧跟标题后面）
   .one-title {
     display: flex;
     align-items: center;
@@ -48,11 +48,16 @@
       flex-shrink: 0;
     }
 
+    .one-title-icon {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+    }
+
     .one-tabs {
       display: inline-flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-left: auto;
     }
   }
 
@@ -78,6 +83,14 @@
 
   .two-block {
     margin-bottom: 10px;
+  }
+
+  // 右上角访问登录入口（侧栏 200px 之外）
+  ::ng-deep .side-access-login {
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    z-index: 40;
   }
 
   ::ng-deep {

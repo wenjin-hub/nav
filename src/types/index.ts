@@ -295,6 +295,9 @@ export interface ISettings {
   userActions: ActionType[]
   email: string
 
+  // 访问密码哈希（SHA-256，空字符串表示未启用）
+  accessPwdHash?: string
+
   spiderIcon: Spider
   spiderDescription: Spider
   spiderTitle: Spider

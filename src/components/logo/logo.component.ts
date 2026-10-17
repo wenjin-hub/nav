@@ -33,7 +33,8 @@ export class LogoComponent {
   }
 
   private generateColor() {
-    this.backgroundColor = `linear-gradient(45deg, #fff, ${randomColor()} 41%)`
+    // 纯色背景比白色渐变更干净，白字对比清晰
+    this.backgroundColor = randomColor()
   }
 
   private getFirstLetter() {

@@ -9,7 +9,7 @@ import type { IWebProps } from 'src/types'
 import { TopType } from 'src/types'
 import { queryString, fuzzySearch, isMobile, getDefaultTheme } from 'src/utils'
 import { isNumber } from 'src/utils/pureUtils'
-import { isLogin } from 'src/utils/user'
+import { isLogin, isAccessUnlocked } from 'src/utils/user'
 import { ActivatedRoute, Router } from '@angular/router'
 import { CommonService } from 'src/services/common'
 import { JumpService } from 'src/services/jump'
@@ -92,7 +92,7 @@ export class WebListComponent {
 
         const item = nav[i]
         if (item.url) {
-          if (item.top && (isLogin || !item.ownVisible)) {
+          if (item.top && (isLogin || isAccessUnlocked() || !item.ownVisible)) {
             const isMatch = (item.topTypes || []).some(
               (v: number) => path === TopType[v],
             )

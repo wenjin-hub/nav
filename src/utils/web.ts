@@ -5,7 +5,7 @@ import event from 'src/utils/mitt'
 import localforage from 'localforage'
 import navConfig from '../../nav.config.json'
 import { updateFileContent } from 'src/api'
-import { isLogin } from './user'
+import { isLogin, isAccessUnlocked } from './user'
 import { IWebProps, INavProps } from '../types'
 import { navs } from 'src/store'
 import { STORAGE_KEY_MAP, DB_PATH } from 'src/constants'
@@ -23,7 +23,8 @@ export async function getNavs() {
     event.emit('WEB_FINISH')
     window.__FINISHED__ = true
   }
-  const data = filterLoginData(navs(), isLogin)
+  // 访客通过访问密码解锁后，与登录用户一样可见全部数据
+  const data = filterLoginData(navs(), isLogin || isAccessUnlocked())
   if (!isLogin) {
     return finish(data)
   }

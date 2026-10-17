@@ -190,6 +190,42 @@
     </nz-form-control>
   </nz-form-item>
 
+  <!-- PWA：手机添加到主屏幕像 App 一样使用 -->
+  <nz-form-item>
+    <nz-form-label [nzSpan]="4" [nzNoColon]="true">启用 PWA</nz-form-label>
+    <nz-form-control [nzSpan]="20">
+      <label nz-checkbox formControlName="pwaEnable"></label>
+      <span style="font-size: 12px; color: #999; margin-left: 8px">
+        开启后手机访问可「添加到主屏幕」离线使用（保存设置后需等网站重建生效）
+      </span>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- 访问密码：访客输入密码可见「仅自己可见」内容 -->
+  <nz-form-item>
+    <nz-form-label [nzSpan]="4">访问密码</nz-form-label>
+    <nz-form-control [nzSpan]="20">
+      <div style="display: flex; gap: 8px; max-width: 420px; flex-wrap: wrap">
+        <input
+          nz-input
+          type="password"
+          [value]="accessPwdInput"
+          (input)="accessPwdInput = $event.target.value"
+          [placeholder]="
+            hasAccessPwd ? '已设置（输入新密码可修改，留空提交则清除）' : '未设置，请输入至少 4 位密码'
+          "
+          style="flex: 1; min-width: 180px"
+        />
+        <button nz-button nzType="primary" (click)="saveAccessPwd()">
+          保存密码
+        </button>
+      </div>
+      <span style="font-size: 12px; color: #999; display: block; margin-top: 4px">
+        设置后访客可在页面右上角「登录」，输入密码后可见「仅自己可见」的分类（仅防路人，不防技术手段）
+      </span>
+    </nz-form-control>
+  </nz-form-item>
+
   <nz-form-item>
     <nz-form-label [nzSpan]="4" [nzNoColon]="true">{{
       $t('_openSearch')

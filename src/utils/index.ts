@@ -12,7 +12,7 @@ import {
 } from '../types'
 import { STORAGE_KEY_MAP } from 'src/constants'
 import { CODE_SYMBOL } from 'src/constants/symbol'
-import { isLogin } from './user'
+import { isLogin, isAccessUnlocked } from './user'
 import { SearchType } from 'src/components/search/types'
 import { navs, search, settings, tagMap } from 'src/store'
 import { $t } from 'src/locale'
@@ -403,7 +403,9 @@ export function matchCurrentList(): INavThreeProp[] {
     if (
       navsData[oneIndex] &&
       navsData[oneIndex]?.nav?.length > 0 &&
-      (isLogin || !navsData[oneIndex].nav[twoIndex].ownVisible)
+      (isLogin ||
+        isAccessUnlocked() ||
+        !navsData[oneIndex].nav[twoIndex].ownVisible)
     ) {
       data = navsData[oneIndex].nav[twoIndex].nav
     } else {

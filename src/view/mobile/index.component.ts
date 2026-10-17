@@ -12,6 +12,7 @@ import { ToolbarTitleWebComponent } from 'src/components/toolbar-title/index.com
 import { FixbarComponent } from 'src/components/fixbar/index.component'
 import { NoDataComponent } from 'src/components/no-data/no-data.component'
 import { LogoComponent } from 'src/components/logo/logo.component'
+import { AccessLoginComponent } from 'src/components/access-login/index.component'
 import { filterLoginData } from 'src/utils/pureUtils'
 import { isLogin } from 'src/utils/user'
 import type { INavProps, INavThreeProp, INavTwoProp } from 'src/types'
@@ -30,6 +31,7 @@ import { debounceTime } from 'rxjs/operators'
     FixbarComponent,
     NoDataComponent,
     LogoComponent,
+    AccessLoginComponent,
   ],
   selector: 'app-mobile',
   templateUrl: './index.component.html',
