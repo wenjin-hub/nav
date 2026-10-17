@@ -20,7 +20,7 @@ import { ClassTabsComponent } from 'src/components/class-tabs/index.component'
 import { SidebarComponent } from 'src/components/sidebar/index.component'
 import { filterLoginData } from 'src/utils/pureUtils'
 import { isLogin } from 'src/utils/user'
-import type { INavProps, INavThreeProp } from 'src/types'
+import type { INavProps, INavThreeProp, INavTwoProp } from 'src/types'
 import event from 'src/utils/mitt'
 import { Subscription, fromEvent } from 'rxjs'
 import { debounceTime } from 'rxjs/operators'
@@ -52,6 +52,9 @@ export default class SideComponent implements OnDestroy {
   // 整页数据：所有一级分类（已过滤「仅自己可见」，访客不可见私密分类）
   pageList: INavProps[] = []
 
+  // 每个一级分类当前选中的二级分类 id（未选择过时默认显示第一个二级）
+  selectedTwo: Record<number, number> = {}
+
   private disableScrollEvent = false
   private scrollTimer: any = null
   private scrollSub: Subscription | null = null
@@ -60,7 +63,7 @@ export default class SideComponent implements OnDestroy {
     this.buildPage()
     event.on('WEB_FINISH', () => this.buildPage())
     event.on('WEB_REFRESH', () => this.buildPage())
-    // 左侧菜单点击 → 平滑滚动到对应区域
+    // 左侧菜单点击 → 切换区域内容 + 平滑滚动到对应区域
     event.on('SIDE_SCROLL_TO', (payload: unknown) => {
       this.scrollToSection(payload as { oneId: number; twoId: number })
     })
@@ -83,20 +86,48 @@ export default class SideComponent implements OnDestroy {
     this.pageList = filterLoginData(this.commonService.navs(), isLogin)
   }
 
+  // 获取某一级分类当前展示的二级分类 id（未手动选择过时默认第一个）
+  getActiveTwoId(one: INavProps): number {
+    return this.selectedTwo[one.id] || one.nav?.[0]?.id || 0
+  }
+
+  // 点击区域标题行的二级标签：就地切换该区域显示的网址
+  selectTwo(one: INavProps, two: INavTwoProp) {
+    this.selectedTwo = { ...this.selectedTwo, [one.id]: two.id }
+    this.syncIndex(one.id, two.id)
+  }
+
+  // 根据 id 同步 commonService 的 oneIndex/twoIndex（驱动左侧菜单高亮）
+  private syncIndex(oneId: number, twoId: number) {
+    const oneIdx = this.pageList.findIndex((n) => n.id === oneId)
+    if (oneIdx === -1) return
+    this.commonService.oneIndex = oneIdx
+    const twoIdx = this.pageList[oneIdx].nav.findIndex((t) => t.id === twoId)
+    if (twoIdx > -1) {
+      this.commonService.twoIndex = twoIdx
+    }
+  }
+
   // 整页模式下折叠三级分组（操作渲染副本，即时生效）
   onCollapseThree(item: INavThreeProp) {
     item.collapsed = !item.collapsed
   }
 
   scrollToSection(payload: { oneId: number; twoId: number }) {
-    const el = payload.twoId
-      ? document.getElementById(`two-${payload.twoId}`)
-      : document.getElementById(`one-${payload.oneId}`)
+    if (payload.twoId) {
+      // 点了二级目录：该区域切换到对应二级
+      this.selectedTwo = {
+        ...this.selectedTwo,
+        [payload.oneId]: payload.twoId,
+      }
+      this.syncIndex(payload.oneId, payload.twoId)
+    }
+    const el = document.getElementById(`one-${payload.oneId}`)
     if (!el) return
     // 平滑滚动期间暂停 scroll-spy，避免高亮抖动
     this.disableScrollEvent = true
     clearTimeout(this.scrollTimer)
-    const top = el.getBoundingClientRect().top + window.scrollY - 90
+    const top = el.getBoundingClientRect().top + window.scrollY - 16
     window.scrollTo({ top, behavior: 'smooth' })
     this.scrollTimer = setTimeout(() => {
       this.disableScrollEvent = false
@@ -111,7 +142,7 @@ export default class SideComponent implements OnDestroy {
     )
     if (!spyEls.length) return
 
-    // 取「视口顶部越过探针线(120px)」的最后一个分区作为当前区域
+    // 取「视口顶部越过探针线(120px)」的最后一个一级区域作为当前区域
     let current: HTMLElement | null = null
     for (const el of spyEls) {
       if (el.getBoundingClientRect().top <= 120) {
@@ -120,7 +151,7 @@ export default class SideComponent implements OnDestroy {
         break
       }
     }
-    // 滚动到底部时强制选中最后一个分区
+    // 滚动到底部时强制选中最后一个区域
     if (
       window.scrollY + window.innerHeight >=
       document.documentElement.scrollHeight - 2
@@ -129,18 +160,18 @@ export default class SideComponent implements OnDestroy {
     }
     if (!current) return
 
-    const oneIndex = Number(current.dataset['oneIndex'])
-    if (Number.isNaN(oneIndex)) return
-    const twoIndex = Number(current.dataset['twoIndex'])
     const oneId = Number(current.dataset['oneId'])
-
-    if (this.commonService.oneIndex !== oneIndex) {
-      this.commonService.oneIndex = oneIndex
-      // 通知左侧菜单展开对应一级分类
-      event.emit('SIDE_SPY_ONE', oneId)
-    }
-    if (!Number.isNaN(twoIndex) && twoIndex >= 0) {
-      this.commonService.twoIndex = twoIndex
+    const oneIdx = Number(current.dataset['oneIndex'])
+    if (Number.isNaN(oneIdx)) return
+    this.commonService.oneIndex = oneIdx
+    // 二级高亮跟随该区域当前选中的二级标签
+    const one = this.pageList[oneIdx]
+    if (one?.nav?.length) {
+      const activeId = this.getActiveTwoId(one)
+      const twoIdx = one.nav.findIndex((t) => t.id === activeId)
+      if (twoIdx > -1) {
+        this.commonService.twoIndex = twoIdx
+      }
     }
   }
 }
