@@ -43,6 +43,8 @@ function getDefaultCollapsed(): boolean {
 })
 export class SidebarComponent {
   @Input() showTop: boolean = true
+  // 整页滚动模式：点击菜单不切换路由过滤，而是通知视图平滑滚动到对应区域
+  @Input() scrollMode: boolean = false
 
   navs: INavProps[] = navs()
   isDark = isDark()
@@ -55,6 +57,15 @@ export class SidebarComponent {
 
     event.on('EVENT_DARK', (isDark: unknown) => {
       this.isDark = isDark as boolean
+    })
+
+    // 整页滚动模式下，右侧滚动到某分类时，自动展开左侧对应的一级菜单
+    event.on('SIDE_SPY_ONE', (oneId: unknown) => {
+      if (!this.scrollMode) return
+      const id = oneId as number
+      if (id && this.navs.some((n) => n.id === id)) {
+        this.menuOpenId = id
+      }
     })
   }
 
@@ -91,6 +102,18 @@ export class SidebarComponent {
   }
 
   onClickNav(item: INavTwoProp) {
+    if (this.scrollMode) {
+      // 整页滚动模式：通知视图滚动到对应区域，不改变路由
+      const parent = this.navs.find((n) =>
+        (n.nav || []).some((two) => two.id === item.id),
+      )
+      event.emit('SIDE_SCROLL_TO', {
+        oneId: parent?.id || 0,
+        twoId: item.id,
+      })
+      this.toggleSidebar(false)
+      return
+    }
     this.commonService.handleClickClass(item.id)
     this.toggleSidebar(false)
   }
