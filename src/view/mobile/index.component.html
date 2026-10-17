@@ -1,51 +1,75 @@
 <section class="app-page select-none dark-bg">
-  <header class="header dark-bg-gary dark-shadow">
-    <div class="header-top dark-border-color">
-      <img [src]="commonService.settings().favicon" class="logo" alt="logo" />
-      <div class="open" [class.active]="open" (click)="handleToggleOpen()">
-        <i></i>
-        <i></i>
-        <i></i>
-      </div>
+  <!-- 抽屉遮罩 -->
+  <div class="drawer-mask" [class.show]="open" (click)="open = false"></div>
+
+  <!-- 左侧抽屉菜单（占屏幕 2/3 宽） -->
+  <nav class="drawer" [class.show]="open">
+    <div class="drawer-header dark-border-color">
+      <img [src]="commonService.settings().favicon" class="drawer-logo" alt="logo" />
+      <span class="drawer-title ellipsis">{{
+        commonService.settings().sideTitle || commonService.title()
+      }}</span>
     </div>
 
-    <nav class="nav-open" [class.active]="open">
+    <div class="drawer-scroll">
       <div
+        class="drawer-item"
         *ngFor="
-          let item of commonService.navs();
-          let i = index;
+          let one of pageList;
+          let oi = index;
           trackBy: commonService.trackByItem
         "
-        (click)="handleCilckNav(item.id)"
-        [class.active]="commonService.oneIndex === i"
-        class="nav-title"
+        [class.active]="commonService.oneIndex === oi"
       >
-        {{ item.title }}
+        <div class="drawer-row" (click)="handleCilckNav(one)">
+          <app-logo
+            *ngIf="one.icon"
+            [src]="one.icon"
+            class="mr-2.5 flex-center"
+            [size]="22"
+            [radius]="0"
+            [name]="one.title"
+          />
+          <span class="drawer-row-title ellipsis">{{ one.title }}</span>
+          <span
+            class="expand-arrow"
+            *ngIf="one.nav?.length"
+            [class.expanded]="expandedOneId === one.id"
+            (click)="toggleExpand(one.id, $event)"
+          >›</span>
+        </div>
+
+        <!-- 展开的二级目录 -->
+        <div class="drawer-children" *ngIf="expandedOneId === one.id && one.nav?.length">
+          <div
+            class="drawer-child"
+            *ngFor="let two of one.nav; trackBy: commonService.trackByItem"
+            [class.active]="getActiveTwoId(one) === two.id"
+            (click)="handleClickTwo(one, two)"
+          >
+            {{ two.title }}
+          </div>
+        </div>
       </div>
-    </nav>
+    </div>
+  </nav>
+
+  <!-- 顶部固定栏 -->
+  <header class="header dark-bg-gary dark-shadow">
+    <div class="header-top dark-border-color">
+      <div class="open" [class.active]="open" (click)="open = !open">
+        <i></i>
+        <i></i>
+        <i></i>
+      </div>
+      <img [src]="commonService.settings().favicon" class="logo" alt="logo" />
+    </div>
   </header>
 
   <app-search class="mt-2.5 flow-root" />
 
   <!-- 搜索模式：保留原有「只显示匹配结果」的渲染 -->
   <div class="wrapper" *ngIf="commonService.searchKeyword; else fullPage">
-    <nav
-      class="children-nav dark-bg"
-      *ngIf="commonService.navs()[commonService.oneIndex]?.nav?.length"
-    >
-      <span
-        class="tag dark-text"
-        *ngFor="
-          let item of commonService.navs()[commonService.oneIndex].nav;
-          let i = index;
-          trackBy: commonService.trackByItem
-        "
-        [class.active]="commonService.twoIndex === i"
-        (click)="commonService.handleClickClass(item.id)"
-      >
-        {{ item.title }}
-      </span>
-    </nav>
     <div *ngFor="let item of commonService.currentList; index as i">
       <app-toolbar-title
         [dataSource]="item"
@@ -74,27 +98,9 @@
     </div>
   </div>
 
-  <!-- 整页模式：一次渲染所有分类，滚动联动顶部标签 -->
+  <!-- 整页模式：每个一级分类一个区域，标题行带二级标签切换 -->
   <ng-template #fullPage>
     <div class="wrapper">
-      <nav
-        class="children-nav dark-bg sticky-nav"
-        *ngIf="pageList[commonService.oneIndex]?.nav?.length"
-      >
-        <span
-          class="tag dark-text"
-          *ngFor="
-            let item of pageList[commonService.oneIndex].nav;
-            let i = index;
-            trackBy: commonService.trackByItem
-          "
-          [class.active]="commonService.twoIndex === i"
-          (click)="handleClickTwo(item.id)"
-        >
-          {{ item.title }}
-        </span>
-      </nav>
-
       <div
         *ngFor="
           let one of pageList;
@@ -103,63 +109,67 @@
         "
         class="one-block"
       >
-        <!-- 一级分类大标题（锚点） -->
+        <!-- 一级分类大标题 + 二级标签（锚点） -->
         <div
           class="m-one-title"
           [id]="'m-one-' + one.id"
           data-spy="one"
           [attr.data-one-index]="oi"
-          [attr.data-two-index]="-1"
+          [attr.data-one-id]="one.id"
         >
-          {{ one.title }}
+          <span class="m-one-title-text">{{ one.title }}</span>
+          <span class="m-one-tabs" *ngIf="one.nav.length > 1">
+            <span
+              class="m-one-tab"
+              *ngFor="let two of one.nav; trackBy: commonService.trackByItem"
+              [class.active]="getActiveTwoId(one) === two.id"
+              (click)="selectTwo(one, two)"
+            >
+              {{ two.title }}
+            </span>
+          </span>
         </div>
 
-        <!-- 二级分类分区（锚点） -->
-        <div
-          *ngFor="
-            let two of one.nav;
-            let ti = index;
-            trackBy: commonService.trackByItem
-          "
-          class="two-block"
-          [id]="'m-two-' + two.id"
-          data-spy="two"
-          [attr.data-one-index]="oi"
-          [attr.data-two-index]="ti"
-        >
-          <div
-            *ngFor="let three of two.nav; trackBy: commonService.trackByItem"
+        <!-- 该区域当前选中二级分类的内容 -->
+        <div class="m-one-body">
+          <ng-container
+            *ngFor="let two of one.nav; trackBy: commonService.trackByItem"
           >
-            <!-- 二级下只有一个与二级同名的三级分组时，不重复显示标题 -->
-            <app-toolbar-title
-              *ngIf="two.nav.length > 1 || three.title !== two.title"
-              [dataSource]="three"
-              (onCollapse)="onCollapseThree(three)"
-            />
+            <div *ngIf="two.id === getActiveTwoId(one)">
+              <div
+                *ngFor="let three of two.nav; trackBy: commonService.trackByItem"
+              >
+                <!-- 二级下只有一个与二级同名的三级分组时，不重复显示标题 -->
+                <app-toolbar-title
+                  *ngIf="two.nav.length > 1 || three.title !== two.title"
+                  [dataSource]="three"
+                  (onCollapse)="onCollapseThree(three)"
+                />
 
-            <div
-              [class.hidden]="three['collapsed']"
-              [ngClass]="{
-                'px-3 grid gap-x-4 gap-y-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4':
-                  commonService.settings().appCardStyle !== 'icon',
-                'flex flex-wrap gap-x-6 gap-y-4':
-                  commonService.settings().appCardStyle === 'icon',
-                '2xl:grid-cols-6':
-                  commonService.settings().appCardStyle === 'original' ||
-                  commonService.settings().appCardStyle === 'example',
-              }"
-            >
-              <app-card
-                *ngFor="
-                  let el of three.nav;
-                  trackBy: commonService.trackByItemWeb
-                "
-                [cardStyle]="commonService.settings().appCardStyle"
-                [dataSource]="el"
-                class="column-border"
-              ></app-card>
+                <div
+                  [class.hidden]="three['collapsed']"
+                  [ngClass]="{
+                    'px-2 grid grid-cols-2 gap-x-3 gap-y-3 md:grid-cols-3 lg:grid-cols-4':
+                      commonService.settings().appCardStyle !== 'icon',
+                    'px-2 flex flex-wrap gap-x-4 gap-y-4':
+                      commonService.settings().appCardStyle === 'icon',
+                  }"
+                >
+                  <app-card
+                    *ngFor="
+                      let el of three.nav;
+                      trackBy: commonService.trackByItemWeb
+                    "
+                    [cardStyle]="commonService.settings().appCardStyle"
+                    [dataSource]="el"
+                    class="column-border"
+                  ></app-card>
+                </div>
+              </div>
+
+              <app-no-data *ngIf="two.nav?.length === 0" />
             </div>
-          </div>
+          </ng-container>
         </div>
       </div>
     </div>
