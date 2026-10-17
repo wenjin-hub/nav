@@ -125,4 +125,36 @@ $bg-color: #fbfbfb;
       }
     }
   }
+
+  // 整页模式：二级标签栏吸顶（顶部固定头高约 50px）
+  .sticky-nav {
+    position: sticky;
+    top: 50px;
+    z-index: 10;
+  }
+
+  // 一级分类大标题
+  .m-one-title {
+    margin: 18px 12px 12px;
+    padding: 8px 12px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #1f2329;
+    background: rgba(32, 160, 255, 0.08);
+    border-left: 4px solid #20a0ff;
+    border-radius: 4px;
+  }
+
+  .two-block {
+    margin-bottom: 8px;
+  }
+}
+
+// 暗色模式适配
+:host-context(.dark-container) {
+  .m-one-title {
+    color: #c9d1d9;
+    background: rgba(88, 166, 255, 0.12);
+    border-left-color: #58a6ff;
+  }
 }

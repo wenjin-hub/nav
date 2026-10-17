@@ -27,7 +27,8 @@
 
   <app-search class="mt-2.5 flow-root" />
 
-  <div class="wrapper" *ngIf="commonService.navs()[commonService.oneIndex]">
+  <!-- 搜索模式：保留原有「只显示匹配结果」的渲染 -->
+  <div class="wrapper" *ngIf="commonService.searchKeyword; else fullPage">
     <nav
       class="children-nav dark-bg"
       *ngIf="commonService.navs()[commonService.oneIndex]?.nav?.length"
@@ -72,6 +73,97 @@
       </div>
     </div>
   </div>
+
+  <!-- 整页模式：一次渲染所有分类，滚动联动顶部标签 -->
+  <ng-template #fullPage>
+    <div class="wrapper">
+      <nav
+        class="children-nav dark-bg sticky-nav"
+        *ngIf="pageList[commonService.oneIndex]?.nav?.length"
+      >
+        <span
+          class="tag dark-text"
+          *ngFor="
+            let item of pageList[commonService.oneIndex].nav;
+            let i = index;
+            trackBy: commonService.trackByItem
+          "
+          [class.active]="commonService.twoIndex === i"
+          (click)="handleClickTwo(item.id)"
+        >
+          {{ item.title }}
+        </span>
+      </nav>
+
+      <div
+        *ngFor="
+          let one of pageList;
+          let oi = index;
+          trackBy: commonService.trackByItem
+        "
+        class="one-block"
+      >
+        <!-- 一级分类大标题（锚点） -->
+        <div
+          class="m-one-title"
+          [id]="'m-one-' + one.id"
+          data-spy="one"
+          [attr.data-one-index]="oi"
+          [attr.data-two-index]="-1"
+        >
+          {{ one.title }}
+        </div>
+
+        <!-- 二级分类分区（锚点） -->
+        <div
+          *ngFor="
+            let two of one.nav;
+            let ti = index;
+            trackBy: commonService.trackByItem
+          "
+          class="two-block"
+          [id]="'m-two-' + two.id"
+          data-spy="two"
+          [attr.data-one-index]="oi"
+          [attr.data-two-index]="ti"
+        >
+          <div
+            *ngFor="let three of two.nav; trackBy: commonService.trackByItem"
+          >
+            <!-- 二级下只有一个与二级同名的三级分组时，不重复显示标题 -->
+            <app-toolbar-title
+              *ngIf="two.nav.length > 1 || three.title !== two.title"
+              [dataSource]="three"
+              (onCollapse)="onCollapseThree(three)"
+            />
+
+            <div
+              [class.hidden]="three['collapsed']"
+              [ngClass]="{
+                'px-3 grid gap-x-4 gap-y-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4':
+                  commonService.settings().appCardStyle !== 'icon',
+                'flex flex-wrap gap-x-6 gap-y-4':
+                  commonService.settings().appCardStyle === 'icon',
+                '2xl:grid-cols-6':
+                  commonService.settings().appCardStyle === 'original' ||
+                  commonService.settings().appCardStyle === 'example',
+              }"
+            >
+              <app-card
+                *ngFor="
+                  let el of three.nav;
+                  trackBy: commonService.trackByItemWeb
+                "
+                [cardStyle]="commonService.settings().appCardStyle"
+                [dataSource]="el"
+                class="column-border"
+              ></app-card>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
 
   <app-footer />
   <app-fixbar
