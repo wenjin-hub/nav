@@ -27,6 +27,27 @@
     flex: 1;
     transition: 0.1s linear;
   }
+
+  // 一级分类大标题（参考爱达杂货铺风格）
+  .one-title {
+    margin: 22px 0 12px;
+    padding: 8px 14px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2329;
+    background: rgba(22, 119, 255, 0.08);
+    border-left: 4px solid #1677ff;
+    border-radius: 4px;
+
+    .one-title-text {
+      display: inline-block;
+    }
+  }
+
+  .two-block {
+    margin-bottom: 10px;
+  }
+
   ::ng-deep {
     .web-list {
       padding: 0;
@@ -37,5 +58,14 @@
         border-radius: 2px !important;
       }
     }
+  }
+}
+
+// 暗色模式适配
+:host-context(.dark-container) {
+  .one-title {
+    color: #c9d1d9;
+    background: rgba(88, 166, 255, 0.12);
+    border-left-color: #58a6ff;
   }
 }

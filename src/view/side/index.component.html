@@ -4,7 +4,7 @@
     *ngIf="commonService.sliceMax === 0"
     class="position-center !z-50 mt-24"
   />
-  <app-sidebar />
+  <app-sidebar [scrollMode]="true" />
 
   <div class="inner-layout dark-bg">
     <app-swiper
@@ -25,60 +25,148 @@
     </div>
 
     <div class="content" id="content">
-      <div
-        class="sticky top-0 left-0 z-10"
-        *ngIf="commonService.currentList.length > 1"
-      >
-        <app-class-tabs [data]="commonService.currentList" />
-      </div>
-      <div class="box">
-        <div *ngIf="commonService.currentList.length > 0; else noData">
-          <div
-            *ngFor="
-              let item of commonService.currentList.slice(
-                0,
-                commonService.sliceMax
-              );
-              let i = index;
-              trackBy: commonService.trackByItem
-            "
-          >
-            <div class="nav-wrapper">
-              <app-toolbar-title
-                [dataSource]="item"
-                (onCollapse)="commonService.onCollapse(item)"
-              />
-
-              <div
-                [class.hidden]="item['collapsed']"
-                [ngClass]="{
-                  'grid gap-x-4 gap-y-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4':
-                    commonService.settings().sideCardStyle !== 'icon',
-                  'flex flex-wrap gap-x-6 gap-y-4':
-                    commonService.settings().sideCardStyle === 'icon',
-                  '2xl:grid-cols-6':
-                    commonService.settings().sideCardStyle === 'original' ||
-                    commonService.settings().sideCardStyle === 'example',
-                }"
-              >
-                <app-card
-                  *ngFor="
-                    let el of item.nav;
-                    trackBy: commonService.trackByItemWeb
-                  "
-                  [cardStyle]="commonService.settings().sideCardStyle"
-                  [dataSource]="el"
-                  class="column-border"
+      <!-- 搜索模式：保留原有「只显示匹配结果」的渲染 -->
+      <ng-container *ngIf="commonService.searchKeyword; else fullPage">
+        <div
+          class="sticky top-0 left-0 z-10"
+          *ngIf="commonService.currentList.length > 1"
+        >
+          <app-class-tabs [data]="commonService.currentList" />
+        </div>
+        <div class="box">
+          <div *ngIf="commonService.currentList.length > 0; else noData">
+            <div
+              *ngFor="
+                let item of commonService.currentList.slice(
+                  0,
+                  commonService.sliceMax
+                );
+                let i = index;
+                trackBy: commonService.trackByItem
+              "
+            >
+              <div class="nav-wrapper">
+                <app-toolbar-title
+                  [dataSource]="item"
+                  (onCollapse)="commonService.onCollapse(item)"
                 />
+
+                <div
+                  [class.hidden]="item['collapsed']"
+                  [ngClass]="{
+                    'grid gap-x-4 gap-y-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4':
+                      commonService.settings().sideCardStyle !== 'icon',
+                    'flex flex-wrap gap-x-6 gap-y-4':
+                      commonService.settings().sideCardStyle === 'icon',
+                    '2xl:grid-cols-6':
+                      commonService.settings().sideCardStyle === 'original' ||
+                      commonService.settings().sideCardStyle === 'example',
+                  }"
+                >
+                  <app-card
+                    *ngFor="
+                      let el of item.nav;
+                      trackBy: commonService.trackByItemWeb
+                    "
+                    [cardStyle]="commonService.settings().sideCardStyle"
+                    [dataSource]="el"
+                    class="column-border"
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <ng-template #noData>
-          <app-no-data />
-        </ng-template>
-      </div>
+          <ng-template #noData>
+            <app-no-data />
+          </ng-template>
+        </div>
+      </ng-container>
+
+      <!-- 整页模式：一次渲染所有分类，滚动联动左侧菜单 -->
+      <ng-template #fullPage>
+        <div class="box">
+          <div *ngIf="pageList.length > 0; else noDataFull">
+            <div
+              *ngFor="
+                let one of pageList;
+                let oi = index;
+                trackBy: commonService.trackByItem
+              "
+              class="one-block"
+            >
+              <!-- 一级分类大标题（锚点） -->
+              <div
+                class="one-title"
+                [id]="'one-' + one.id"
+                data-spy="one"
+                [attr.data-one-index]="oi"
+                [attr.data-two-index]="-1"
+                [attr.data-one-id]="one.id"
+              >
+                <span class="one-title-text">{{ one.title }}</span>
+              </div>
+
+              <!-- 二级分类分区（锚点） -->
+              <div
+                *ngFor="
+                  let two of one.nav;
+                  let ti = index;
+                  trackBy: commonService.trackByItem
+                "
+                class="two-block"
+                [id]="'two-' + two.id"
+                data-spy="two"
+                [attr.data-one-index]="oi"
+                [attr.data-two-index]="ti"
+                [attr.data-one-id]="one.id"
+              >
+                <div
+                  *ngFor="
+                    let three of two.nav;
+                    trackBy: commonService.trackByItem
+                  "
+                  class="nav-wrapper"
+                >
+                  <!-- 二级下只有一个与二级同名的三级分组时，不重复显示标题 -->
+                  <app-toolbar-title
+                    *ngIf="two.nav.length > 1 || three.title !== two.title"
+                    [dataSource]="three"
+                    (onCollapse)="onCollapseThree(three)"
+                  />
+
+                  <div
+                    [class.hidden]="three['collapsed']"
+                    [ngClass]="{
+                      'grid gap-x-4 gap-y-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4':
+                        commonService.settings().sideCardStyle !== 'icon',
+                      'flex flex-wrap gap-x-6 gap-y-4':
+                        commonService.settings().sideCardStyle === 'icon',
+                      '2xl:grid-cols-6':
+                        commonService.settings().sideCardStyle === 'original' ||
+                        commonService.settings().sideCardStyle === 'example',
+                    }"
+                  >
+                    <app-card
+                      *ngFor="
+                        let el of three.nav;
+                        trackBy: commonService.trackByItemWeb
+                      "
+                      [cardStyle]="commonService.settings().sideCardStyle"
+                      [dataSource]="el"
+                      class="column-border"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #noDataFull>
+            <app-no-data />
+          </ng-template>
+        </div>
+      </ng-template>
     </div>
 
     <app-footer
