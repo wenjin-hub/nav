@@ -49,7 +49,69 @@
     </ng-template>
   </div>
 
-  <ul nz-menu nzMode="inline" class="sider dark-bg select-none auto-scrollbar">
+  <!-- 整页滚动模式：自定义菜单（悬停浮层显示二级，点击直接滚动） -->
+  <div class="sider spy-menu dark-bg select-none" *ngIf="scrollMode">
+    <div
+      class="spy-item"
+      *ngFor="
+        let one of commonService.navs();
+        let i = index;
+        trackBy: commonService.trackByItem
+      "
+      [class.active]="commonService.oneIndex === i"
+      (mouseenter)="onHoverOne(one, $event)"
+      (mouseleave)="onLeaveOne()"
+    >
+      <div class="spy-row" (click)="onClickOne(one)">
+        <app-logo
+          *ngIf="one.icon"
+          [src]="one.icon"
+          class="mr-2.5 flex-center"
+          [size]="25"
+          [radius]="0"
+          [name]="one.title"
+        />
+        <span class="spy-title ellipsis">{{ one.title }}</span>
+        <span class="spy-arrow" *ngIf="one.nav?.length">›</span>
+      </div>
+
+      <!-- 悬停浮层：二级目录列表 -->
+      <div
+        class="spy-flyout dark-bg"
+        *ngIf="hoverOneId === one.id && one.nav?.length"
+        [style.top.px]="flyoutTop"
+        [style.left.px]="flyoutLeft"
+      >
+        <div
+          class="spy-flyout-item"
+          *ngFor="
+            let two of one.nav;
+            trackBy: commonService.trackByItem
+          "
+          [class.active]="isTwoActive(one, two)"
+          (click)="onClickTwo(one, two)"
+        >
+          <app-logo
+            *ngIf="two.icon"
+            [src]="two.icon"
+            class="mr-2 flex-center"
+            [size]="22"
+            [radius]="0"
+            [name]="two.title"
+          />
+          <span class="ellipsis">{{ two.title }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 其他主题：原有菜单结构（保持不变） -->
+  <ul
+    nz-menu
+    nzMode="inline"
+    class="sider dark-bg select-none auto-scrollbar"
+    *ngIf="!scrollMode"
+  >
     <li
       nz-submenu
       *ngFor="

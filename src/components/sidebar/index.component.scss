@@ -119,6 +119,98 @@
     flex: 1;
     padding-bottom: 30px;
   }
+
+  // ===== 整页滚动模式：自定义菜单（悬停浮层） =====
+  .spy-menu {
+    padding: 6px 0 30px;
+
+    .spy-item {
+      position: relative;
+    }
+
+    .spy-row {
+      display: flex;
+      align-items: center;
+      margin: 2px 8px;
+      padding: 9px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #333;
+      transition: background 0.15s;
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+    }
+
+    .spy-item.active .spy-row {
+      background: rgba(22, 119, 255, 0.1);
+      color: #1677ff;
+      font-weight: 600;
+    }
+
+    .spy-title {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .spy-arrow {
+      margin-left: 4px;
+      color: #999;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .spy-flyout {
+      position: fixed;
+      z-index: 60;
+      min-width: 170px;
+      max-width: 280px;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
+      padding: 6px;
+    }
+
+    .spy-flyout-item {
+      display: flex;
+      align-items: center;
+      padding: 9px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #333;
+      font-size: 14px;
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      &.active {
+        background: rgba(22, 119, 255, 0.1);
+        color: #1677ff;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// 暗色模式适配
+:host-context(.dark-container) {
+  .spy-row,
+  .spy-flyout-item {
+    color: #c9d1d9;
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+  .spy-flyout {
+    background: #161b22 !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  }
+  .spy-item.active .spy-row,
+  .spy-flyout-item.active {
+    background: rgba(88, 166, 255, 0.15);
+    color: #58a6ff;
+  }
 }
 
 ::ng-deep {
