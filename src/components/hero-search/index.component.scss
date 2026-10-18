@@ -99,6 +99,8 @@
     flex-wrap: wrap;
     gap: 6px 22px;
     margin-top: 14px;
+    // 固定占位：无引擎的类别也保持同样高度，切换类别时搜索框位置不动
+    min-height: 27px;
   }
 
   .hero-engine {

@@ -7,6 +7,18 @@
   </ng-container>
 
   <ng-template #unlockedTpl>
+    <span
+      class="access-btn"
+      [class.editing]="editMode()"
+      (click)="toggleEdit()"
+    >
+      <nz-icon nzType="edit" nzTheme="outline" />
+      <span class="access-btn-text">{{ editMode() ? '退出编辑' : '编辑' }}</span>
+    </span>
+    <span class="access-btn access-save" *ngIf="editMode()" (click)="saveAll()">
+      <nz-icon nzType="save" nzTheme="outline" />
+      <span class="access-btn-text">保存</span>
+    </span>
     <span class="access-btn" (click)="logout()">
       <nz-icon nzType="logout" nzTheme="outline" />
       <span class="access-btn-text">退出</span>

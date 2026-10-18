@@ -28,28 +28,28 @@
         nz-icon
         nzType="edit"
         class="edit-icon"
-        *ngIf="isLogin"
+        *ngIf="editMode()"
         (click)="handleEditName($event, dataSource)"
       ></i>
       <i
         nz-icon
         nzType="swap"
         class="edit-icon"
-        *ngIf="isLogin"
+        *ngIf="editMode()"
         (click)="openMoveModal($event, dataSource)"
       ></i>
       <i
         nz-icon
         nzType="delete"
         class="edit-icon"
-        *ngIf="isLogin"
+        *ngIf="editMode()"
         (click)="handleDelete($event, dataSource.id)"
       ></i>
     </ng-content>
   </div>
 
   <i
-    *ngIf="dataSource.id !== -1 && (isLogin || permissions.create)"
+    *ngIf="dataSource.id !== -1 && editMode()"
     nz-icon
     nzType="plus"
     nzTheme="outline"

@@ -22,6 +22,28 @@
     border-color: #1677ff;
     background: transparent;
   }
+  // 编辑模式中：编辑按钮常亮
+  &.editing {
+    color: #fff;
+    background: #6cb8f9;
+    border-color: #6cb8f9;
+    &:hover {
+      color: #fff;
+      background: #4aa9f5;
+      border-color: #4aa9f5;
+    }
+  }
+  // 保存按钮：实底强调
+  &.access-save {
+    color: #fff;
+    background: #2f95f0;
+    border-color: #2f95f0;
+    &:hover {
+      color: #fff;
+      background: #1e86e8;
+      border-color: #1e86e8;
+    }
+  }
 }
 
 .access-btn-text {
@@ -34,6 +56,21 @@
   i {
     font-style: normal;
     color: #1677ff;
+  }
+}
+
+// 小屏：隐藏访问统计、压缩按钮，避免右上角溢出
+@media (max-width: 768px) {
+  .access-stats {
+    display: none;
+  }
+  .access-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    gap: 3px;
+  }
+  .access-wrap {
+    gap: 6px;
   }
 }
 

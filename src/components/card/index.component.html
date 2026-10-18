@@ -39,7 +39,7 @@
         <div class="rate" *ngIf="settings.showRate">
           <nz-rate
             [ngModel]="dataSource.rate"
-            [nzDisabled]="!isLogin"
+            [nzDisabled]="!editMode()"
             nzAllowHalf
             (ngModelChange)="onRateChange($event)"
           >
@@ -93,7 +93,7 @@
           ></div>
           <div
             class="action-item dark-border-color"
-            *ngIf="isLogin || permissions.edit"
+            *ngIf="editMode()"
             nz-tooltip
             [nzTooltipTitle]="$t('_edit')"
             nz-icon
@@ -103,7 +103,7 @@
           ></div>
           <div
             class="action-item dark-border-color"
-            *ngIf="isLogin"
+            *ngIf="editMode()"
             nz-tooltip
             [nzTooltipTitle]="$t('_move')"
             nz-icon
@@ -113,7 +113,7 @@
           ></div>
           <div
             class="action-item dark-border-color"
-            *ngIf="isLogin || permissions.del"
+            *ngIf="editMode()"
             (click)="confirmDel()"
             nz-icon
             nzType="delete"
@@ -151,6 +151,34 @@
               [innerHTML]="dataSource.desc"
             ></div>
           </div>
+        </div>
+
+        <!-- 编辑模式：浮动操作按钮（不占布局高度） -->
+        <div class="edit-actions" *ngIf="editMode()" (click)="$event.stopPropagation()">
+          <i
+            nz-icon
+            nzType="edit"
+            nzTheme="outline"
+            nz-tooltip
+            [nzTooltipTitle]="$t('_edit')"
+            (click)="openEditWebMoal()"
+          ></i>
+          <i
+            nz-icon
+            nzType="swap"
+            nzTheme="outline"
+            nz-tooltip
+            [nzTooltipTitle]="$t('_move')"
+            (click)="openMoveWebModal()"
+          ></i>
+          <i
+            nz-icon
+            nzType="delete"
+            nzTheme="outline"
+            nz-tooltip
+            [nzTooltipTitle]="$t('_delete')"
+            (click)="confirmDel()"
+          ></i>
         </div>
       </div>
 
@@ -225,14 +253,9 @@
                 [innerHTML]="dataSource.desc"
               ></div>
               <tag-list
-                *ngIf="
-                  dataSource.tags?.length ||
-                  isLogin ||
-                  permissions.edit ||
-                  permissions.del
-                "
+                *ngIf="dataSource.tags?.length"
                 [data]="dataSource.tags"
-                [action]="true"
+                [action]="editMode()"
                 (onDelete)="confirmDel()"
                 (onEdit)="openEditWebMoal()"
                 (onMove)="openMoveWebModal()"
@@ -268,13 +291,8 @@
           <tag-list
             class="poster-tag"
             [data]="dataSource.tags"
-            *ngIf="
-              dataSource.tags?.length ||
-              isLogin ||
-              permissions.edit ||
-              permissions.del
-            "
-            [action]="true"
+            *ngIf="dataSource.tags?.length"
+            [action]="editMode()"
             (onDelete)="confirmDel()"
             (onEdit)="openEditWebMoal()"
             (onMove)="openMoveWebModal()"
@@ -308,13 +326,8 @@
           {{ dataSource.__desc__ || dataSource.desc }}
           <tag-list
             [data]="dataSource.tags"
-            *ngIf="
-              dataSource.tags?.length ||
-              isLogin ||
-              permissions.edit ||
-              permissions.del
-            "
-            [action]="true"
+            *ngIf="dataSource.tags?.length"
+            [action]="editMode()"
             (onDelete)="confirmDel()"
             (onEdit)="openEditWebMoal()"
             (onMove)="openMoveWebModal()"
@@ -378,13 +391,8 @@
           <tag-list
             class="mt-1"
             [data]="dataSource.tags"
-            *ngIf="
-              dataSource.tags?.length ||
-              isLogin ||
-              permissions.edit ||
-              permissions.del
-            "
-            [action]="true"
+            *ngIf="dataSource.tags?.length"
+            [action]="editMode()"
             (onDelete)="confirmDel()"
             (onEdit)="openEditWebMoal()"
             (onMove)="openMoveWebModal()"

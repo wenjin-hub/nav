@@ -13,7 +13,7 @@ import type { IWebProps, ICardType } from 'src/types'
 import { ActionType } from 'src/types'
 import { SearchType } from 'src/components/search/types'
 import { $t, isZhCN } from 'src/locale'
-import { settings, navs } from 'src/store'
+import { settings, navs, editMode } from 'src/store'
 import { JumpService } from 'src/services/jump'
 import { NzRateModule } from 'ng-zorro-antd/rate'
 import { LogoComponent } from 'src/components/logo/logo.component'
@@ -58,6 +58,7 @@ export class CardComponent {
   readonly $t = $t
   readonly settings = settings()
   readonly isLogin = isLogin
+  readonly editMode = editMode
   readonly permissions = getPermissions(settings())
   copyUrlDone = false
   copyPathDone = false

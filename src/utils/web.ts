@@ -25,12 +25,10 @@ export async function getNavs() {
   }
   // 访客通过访问密码解锁后，与登录用户一样可见全部数据
   const data = filterLoginData(navs(), isLogin || isAccessUnlocked())
-  if (!isLogin) {
-    return finish(data)
-  }
+
   const storageDate = window.localStorage.getItem(STORAGE_KEY_MAP.DATE_TIME)
 
-  // 检测到网站更新，清除缓存本地保存记录失效
+  // 检测到网站更新，清除缓存本地保存记录失效（对登录用户与解锁访客都生效）
   if (storageDate !== navConfig.datetime) {
     const removeKeys = [STORAGE_KEY_MAP.WEBSITE, STORAGE_KEY_MAP.DATE_TIME]
     Array.from({ length: globalThis.localStorage.length }, (_, i) => {
@@ -61,6 +59,20 @@ export async function getNavs() {
     return
   }
 
+  if (!isLogin) {
+    // 访客：未解锁直接用过滤后的快照；解锁后读本机修改记录（localforage）
+    if (isAccessUnlocked()) {
+      try {
+        const cached: any = await localforage.getItem(STORAGE_KEY_MAP.WEBSITE)
+        finish(cached || data)
+      } catch {
+        finish(data)
+      }
+      return
+    }
+    return finish(data)
+  }
+
   try {
     const navsData: any =
       (await localforage.getItem(STORAGE_KEY_MAP.WEBSITE)) || data
@@ -89,7 +101,9 @@ export function toggleCollapseAll(navs: INavProps[]): boolean {
     item.collapsed = collapsed
     return item
   })
-  if (!isSelfDevelop) {
+  // 折叠状态只对 GitHub 登录用户或本地开发落盘：解锁访客落盘会把不含私密分类的
+  // 过滤快照写进缓存，导致解锁后重新加载时私密分类丢失
+  if (isLogin || isSelfDevelop) {
     setNavs(navs)
   }
   return collapsed

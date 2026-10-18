@@ -39,6 +39,41 @@
   }
 }
 
+// 编辑模式浮动操作按钮（example/original 卡片样式专用，不占布局高度）
+.edit-actions {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  i {
+    font-size: 14px;
+    color: #8c8c8c;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 2px;
+    &:hover {
+      color: #1677ff;
+    }
+  }
+  i[nztype='delete']:hover {
+    color: #ff4d4f;
+  }
+}
+
+.example2:hover,
+.original2:hover {
+  .edit-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .card-container {
   position: relative;
   width: 100%;

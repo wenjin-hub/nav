@@ -1,5 +1,5 @@
 // 开源项目，未经作者同意，不得以抄袭/复制代码/修改源代码版权信息。
-// Copyright @ 2018-present xiejiahe. All rights reserved.
+// Copyright @ 2018-present xie.jiahe. All rights reserved.
 // See https://github.com/liuzi6612/nav
 
 import { Component, AfterViewInit } from '@angular/core'
@@ -14,7 +14,12 @@ import {
   isAccessUnlocked,
   setAccessUnlocked,
   hashAccessPwd,
+  isLogin,
 } from 'src/utils/user'
+import { editMode, navs } from 'src/store'
+import { updateFileContent } from 'src/api'
+import { DB_PATH } from 'src/constants'
+import { cleanWebAttrs } from 'src/utils/pureUtils'
 
 @Component({
   standalone: true,
@@ -31,9 +36,12 @@ import {
   providers: [NzMessageService],
 })
 export class AccessLoginComponent implements AfterViewInit {
-  isUnlocked = isAccessUnlocked()
+  readonly isUnlocked = isAccessUnlocked()
+  readonly isLogin = isLogin
+  readonly editMode = editMode
   open = false
   loading = false
+  saving = false
   pwd = ''
 
   constructor(
@@ -76,6 +84,38 @@ export class AccessLoginComponent implements AfterViewInit {
       location.reload()
     } finally {
       this.loading = false
+    }
+  }
+
+  toggleEdit() {
+    editMode.set(!editMode())
+    if (editMode()) {
+      this.message.info('已进入编辑模式：鼠标悬停网址可 编辑 / 移动 / 删除')
+    }
+  }
+
+  async saveAll() {
+    if (this.saving) return
+    editMode.set(false)
+    if (!isLogin) {
+      // 无 GitHub 同步令牌：修改已通过 localforage 保存在本机
+      this.message.warning(
+        '当前浏览器未配置同步令牌，修改仅保存在本机；要在所有设备生效，请在已登录后台的浏览器同步',
+      )
+      return
+    }
+    this.saving = true
+    try {
+      await updateFileContent({
+        message: 'update db',
+        content: JSON.stringify(cleanWebAttrs(navs())),
+        path: DB_PATH,
+      })
+      this.message.success('已同步到仓库，Cloudflare 重建后全设备生效（约 1-3 分钟）')
+    } catch (e: any) {
+      this.message.error('同步失败：' + (e?.message || '未知错误'))
+    } finally {
+      this.saving = false
     }
   }
 

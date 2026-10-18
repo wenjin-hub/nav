@@ -28,8 +28,8 @@
       <span class="hero-btn" (click)="trigger($event)">搜索</span>
     </div>
 
-    <!-- 第三行：当前类别的搜索引擎（未配置则不显示） -->
-    <div class="hero-engines" *ngIf="enginesOf(activeCat).length">
+    <!-- 第三行：当前类别的搜索引擎（未配置时保留占位，保证搜索框位置稳定） -->
+    <div class="hero-engines">
       <span
         class="hero-engine"
         *ngFor="let eng of enginesOf(activeCat); let ei = index"

@@ -50,3 +50,6 @@ export const navs = signal<INavProps[]>(
 export const component = signal<IComponentProps>(
   isSelfDevelop ? { zoom: 1, components: [] } : componentJson,
 )
+
+// 前端「编辑模式」：访问密码解锁后可开启，开启后悬停网址显示 编辑/移动/删除
+export const editMode = signal<boolean>(false)

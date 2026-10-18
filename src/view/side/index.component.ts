@@ -22,7 +22,7 @@ import { SidebarComponent } from 'src/components/sidebar/index.component'
 import { LogoComponent } from 'src/components/logo/logo.component'
 import { AccessLoginComponent } from 'src/components/access-login/index.component'
 import { filterLoginData } from 'src/utils/pureUtils'
-import { isLogin } from 'src/utils/user'
+import { isLogin, isAccessUnlocked } from 'src/utils/user'
 import type { INavProps, INavThreeProp, INavTwoProp } from 'src/types'
 import event from 'src/utils/mitt'
 import { Subscription, fromEvent } from 'rxjs'
@@ -88,8 +88,12 @@ export default class SideComponent implements OnDestroy {
   }
 
   buildPage() {
-    // filterLoginData 深拷贝并过滤 ownVisible，保证未登录访客看不到私密分类
-    this.pageList = filterLoginData(this.commonService.navs(), isLogin)
+    // filterLoginData 深拷贝并过滤 ownVisible：
+    // 访问密码解锁或 GitHub 登录后都可见私密分类
+    this.pageList = filterLoginData(
+      this.commonService.navs(),
+      isLogin || isAccessUnlocked(),
+    )
   }
 
   // 获取某一级分类当前展示的二级分类 id（未手动选择过时默认第一个）

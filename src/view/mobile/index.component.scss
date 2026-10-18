@@ -27,9 +27,9 @@ $bg-color: #fbfbfb;
       ::ng-deep .header-access {
         position: absolute;
         right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        // 弹窗要在 fixed header 之外显示，提升层级
+        top: 12px;
+        // 不能用 transform 定位：transform 祖先会让内部 position:fixed
+        // 的登录弹窗改为相对本元素定位，导致弹窗跑到右上角被裁剪
         z-index: 1102;
       }
 

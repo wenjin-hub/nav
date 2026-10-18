@@ -93,35 +93,85 @@ export default class WebpComponent {
     return this.twoNode?.nav?.find((n) => n.id === this.selThreeId)
   }
 
-  // 右侧当前列表 + 类型
-  get rightList(): any[] {
-    if (this.selThreeId !== -1) return this.threeNode?.nav || []
-    if (this.selTwoId !== -1) return this.twoNode?.nav || []
-    if (this.selOneId !== -1) return this.oneNode?.nav || []
-    return this.navs()
-  }
-  get rightKind(): RowKind {
-    if (this.selThreeId !== -1) return 'web'
-    if (this.selTwoId !== -1) return 'three'
-    if (this.selOneId !== -1) return 'two'
-    return 'one'
-  }
-  get rightTitle(): string {
-    if (this.selThreeId !== -1) return this.threeNode?.title || ''
-    if (this.selTwoId !== -1) return this.twoNode?.title || ''
-    if (this.selOneId !== -1) return this.oneNode?.title || ''
-    return '根目录（一级分类）'
-  }
-
-  // 当前选中目录对应的「容器 nav」（用于接收拖拽放入）
-  get currentContainerNav(): any[] | null {
-    if (this.selThreeId !== -1) return this.threeNode?.nav || null
-    if (this.selTwoId !== -1) return this.twoNode?.nav || null
-    if (this.selOneId !== -1) return this.oneNode?.nav || null
+  // 当前选中的树节点（根 = null）
+  get selectedNode(): any | null {
+    if (this.selThreeId !== -1) return this.threeNode
+    if (this.selTwoId !== -1) return this.twoNode
+    if (this.selOneId !== -1) return this.oneNode
     return null
   }
 
-  // ===== 选择 =====
+  // ===== 纯包裹层折叠 =====
+  // 纯包裹层：分类下没有直接网址、且只有 1 个子分类（如「网盘搜索>网盘搜索」）
+  isWrapper(node: any): boolean {
+    return (
+      !!node &&
+      !node.url &&
+      Array.isArray(node.nav) &&
+      node.nav.length === 1 &&
+      !node.nav[0].url
+    )
+  }
+
+  // 穿透纯包裹层，拿到实际存放内容的节点
+  resolveLeaf(node: any): any {
+    let cur = node
+    let guard = 0
+    while (this.isWrapper(cur) && guard++ < 10) {
+      cur = cur.nav[0]
+    }
+    return cur
+  }
+
+  // 树中是否显示展开箭头（有下一级分类，且自身不是纯包裹层）
+  hasCatChildren(node: any): boolean {
+    return (
+      !!node &&
+      !this.isWrapper(node) &&
+      Array.isArray(node.nav) &&
+      node.nav.some((c: any) => !c.url)
+    )
+  }
+
+  // 树行显示的数量（纯包裹层显示穿透后的网址数）
+  nodeCount(node: any): number {
+    return this.resolveLeaf(node)?.nav?.length || 0
+  }
+
+  // 右侧当前列表：实际内容容器的直接子级
+  get rightList(): any[] {
+    const sel = this.selectedNode
+    if (!sel) return this.navs()
+    return this.resolveLeaf(sel)?.nav || []
+  }
+
+  get rightKind(): RowKind {
+    const sel = this.selectedNode
+    if (!sel) return 'one'
+    // 穿透了包裹层 → 实际展示网址
+    if (this.resolveLeaf(sel) !== sel) return 'web'
+    if (this.selThreeId !== -1) return 'web'
+    if (this.selTwoId !== -1) return 'three'
+    return 'two'
+  }
+
+  get rightTitle(): string {
+    return this.selectedNode?.title || '根目录（一级分类）'
+  }
+
+  // 当前选中目录对应的「实际内容容器」（用于接收拖拽放入 / 新增网址）
+  get currentContainerNav(): any[] | null {
+    const sel = this.selectedNode
+    if (!sel) return null
+    return this.resolveLeaf(sel)?.nav || null
+  }
+
+  get currentLeafId(): number {
+    const sel = this.selectedNode
+    return sel ? this.resolveLeaf(sel)?.id ?? -1 : -1
+  }
+
+  // ===== 选择（点击任意层级直达，自动展开父级） =====
   toggleExpand(id: number, e: Event) {
     e.stopPropagation()
     if (this.expanded.has(id)) this.expanded.delete(id)
@@ -133,17 +183,43 @@ export default class WebpComponent {
     this.selTwoId = -1
     this.selThreeId = -1
     this.checked.clear()
-    if (!this.expanded.has(id)) this.expanded.add(id)
+    if (this.hasCatChildren(this.oneNode) && !this.expanded.has(id)) {
+      this.expanded.add(id)
+    }
   }
+
   selectTwo(id: number) {
+    // 自动定位父级，保证「直接点二级」也能正确显示
+    for (const one of this.navs()) {
+      if ((one.nav || []).some((n: any) => n.id === id)) {
+        this.selOneId = one.id
+        if (!this.expanded.has(one.id)) this.expanded.add(one.id)
+        break
+      }
+    }
     this.selTwoId = id
     this.selThreeId = -1
     this.checked.clear()
-    if (!this.expanded.has(id)) this.expanded.add(id)
+    if (this.hasCatChildren(this.twoNode) && !this.expanded.has(id)) {
+      this.expanded.add(id)
+    }
   }
+
   selectThree(id: number) {
-    this.selThreeId = id
-    this.checked.clear()
+    // 自动定位父级链，保证「直接点三级」也能正确显示
+    for (const one of this.navs()) {
+      for (const two of one.nav || []) {
+        if ((two.nav || []).some((n: any) => n.id === id)) {
+          this.selOneId = one.id
+          this.selTwoId = two.id
+          if (!this.expanded.has(one.id)) this.expanded.add(one.id)
+          if (!this.expanded.has(two.id)) this.expanded.add(two.id)
+          this.selThreeId = id
+          this.checked.clear()
+          return
+        }
+      }
+    }
   }
 
   get allChecked(): boolean {
@@ -182,16 +258,9 @@ export default class WebpComponent {
     this.dropTargetId = -1
   }
 
-  // 树节点接受哪种拖拽：一级收二级、二级收三级、三级收网址
-  nodeAccepts(level: 0 | 1 | 2): boolean {
-    if (this.dragKind === 'two') return level === 0
-    if (this.dragKind === 'three') return level === 1
-    if (this.dragKind === 'web') return level === 2
-    return false
-  }
-
-  onDragOverNode(node: any, level: 0 | 1 | 2, e: DragEvent) {
-    if (!this.dragKind || !this.nodeAccepts(level)) return
+  // 任意层级的分类节点都接受网址/分类拖入（防止移入自身子树由 moveInto 里的 hasRef 处理）
+  onDragOverNode(node: any, e: DragEvent) {
+    if (!this.dragKind || this.dragKind === 'one') return
     e.preventDefault()
     this.dropTargetId = node.id
   }
@@ -199,7 +268,10 @@ export default class WebpComponent {
   onDropNode(node: any, e: DragEvent) {
     e.preventDefault()
     if (!this.dragIds.length) return
-    this.moveInto(node.nav || [])
+    // 放入该节点穿透包裹层后的实际内容容器
+    const leaf = this.resolveLeaf(node)
+    if (!leaf?.nav) return
+    this.moveInto(leaf.nav)
   }
 
   // 拖到右侧面板头部 = 放入当前目录
@@ -318,7 +390,7 @@ export default class WebpComponent {
   // ===== 新增 / 编辑 / 删除 =====
   openCreate() {
     if (this.rightKind === 'web') {
-      event.emit('CREATE_WEB', { parentId: this.selThreeId })
+      event.emit('CREATE_WEB', { parentId: this.currentLeafId })
       return
     }
     if (this.rightKind === 'three') {

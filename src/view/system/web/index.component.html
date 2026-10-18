@@ -10,7 +10,7 @@
         [class.selected]="selOneId === one.id && selTwoId === -1"
         [class.drag-over]="dropTargetId === one.id"
         (click)="selectOne(one.id)"
-        (dragover)="onDragOverNode(one, 0, $event)"
+        (dragover)="onDragOverNode(one, $event)"
         (dragleave)="dropTargetId === one.id && (dropTargetId = -1)"
         (drop)="onDropNode(one, $event)"
       >
@@ -18,25 +18,28 @@
           class="chevron"
           [class.open]="expanded.has(one.id)"
           (click)="toggleExpand(one.id, $event)"
-          *ngIf="one.nav?.length"
+          *ngIf="hasCatChildren(one)"
         >
           <i nz-icon nzType="right" nzTheme="outline"></i>
         </span>
-        <span class="chevron placeholder" *ngIf="!one.nav?.length"></span>
+        <span class="chevron placeholder" *ngIf="!hasCatChildren(one)"></span>
         <span class="row-icon">📁</span>
         <span class="row-title">{{ one.title }}</span>
-        <span class="row-count">{{ one.nav?.length || 0 }}</span>
+        <span class="row-count">{{ nodeCount(one) }}</span>
       </div>
 
-      <!-- 二级 -->
-      <div *ngIf="expanded.has(one.id)" class="tree-children">
+      <!-- 二级（纯包裹层不展开子级） -->
+      <div
+        *ngIf="expanded.has(one.id) && hasCatChildren(one)"
+        class="tree-children"
+      >
         <div *ngFor="let two of one.nav" class="tree-branch">
           <div
             class="tree-row"
             [class.selected]="selTwoId === two.id && selThreeId === -1"
             [class.drag-over]="dropTargetId === two.id"
             (click)="selectTwo(two.id)"
-            (dragover)="onDragOverNode(two, 1, $event)"
+            (dragover)="onDragOverNode(two, $event)"
             (dragleave)="dropTargetId === two.id && (dropTargetId = -1)"
             (drop)="onDropNode(two, $event)"
           >
@@ -44,25 +47,28 @@
               class="chevron"
               [class.open]="expanded.has(two.id)"
               (click)="toggleExpand(two.id, $event)"
-              *ngIf="two.nav?.length"
+              *ngIf="hasCatChildren(two)"
             >
               <i nz-icon nzType="right" nzTheme="outline"></i>
             </span>
-            <span class="chevron placeholder" *ngIf="!two.nav?.length"></span>
+            <span class="chevron placeholder" *ngIf="!hasCatChildren(two)"></span>
             <span class="row-icon">📂</span>
             <span class="row-title">{{ two.title }}</span>
-            <span class="row-count">{{ two.nav?.length || 0 }}</span>
+            <span class="row-count">{{ nodeCount(two) }}</span>
           </div>
 
-          <!-- 三级 -->
-          <div *ngIf="expanded.has(two.id)" class="tree-children">
+          <!-- 三级（纯包裹层不显示） -->
+          <div
+            *ngIf="expanded.has(two.id) && hasCatChildren(two)"
+            class="tree-children"
+          >
             <div
               class="tree-row"
               *ngFor="let three of two.nav"
               [class.selected]="selThreeId === three.id"
               [class.drag-over]="dropTargetId === three.id"
               (click)="selectThree(three.id)"
-              (dragover)="onDragOverNode(three, 2, $event)"
+              (dragover)="onDragOverNode(three, $event)"
               (dragleave)="dropTargetId === three.id && (dropTargetId = -1)"
               (drop)="onDropNode(three, $event)"
             >
