@@ -190,3 +190,50 @@
     }
   }
 }
+
+// 桌面端（md+）：整页高度固定为视口，只有网址卡片区域内部滚动，
+// 滚轮滚动只发生在卡片区内，避免整页上下跳动闪屏
+@media (min-width: 768px) {
+  :host {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sim {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+
+    .bar {
+      margin-top: 6px;
+    }
+
+    .wrapper {
+      flex: 1;
+      min-height: 0;
+      padding-bottom: 8px;
+
+      .site-box {
+        height: 100%;
+        max-height: 100%;
+        overflow-y: auto;
+        // 滚动条样式：细条不占宽
+        scrollbar-width: thin;
+      }
+
+      .sidebar {
+        top: 0;
+        max-height: 100%;
+      }
+    }
+  }
+
+  // 底部压缩为一行小字，给卡片区域腾空间
+  ::ng-deep app-footer .footer.sim-footer {
+    flex-shrink: 0;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+}

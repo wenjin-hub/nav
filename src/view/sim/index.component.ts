@@ -97,20 +97,24 @@ export default class SimComponent implements OnDestroy {
     }
   }
 
-  // 滚动鼠标滚轮：页面滚到底部继续下滚 → 切换到下一个一级分类；顶部继续上滚 → 上一个
+  // 滚动鼠标滚轮：整页高度固定，只有卡片区域（.site-box）内部滚动；
+  // 卡片区滚到底继续下滚 → 切换下一个一级分类，滚到顶继续上滚 → 上一个。
+  // 页面本身不发生滚动，因此切换时不会出现整页上下跳动闪屏
   @HostListener('window:wheel', ['$event'])
   onWheel(e: WheelEvent) {
     if (this.wheelLock) return
     if (this.commonService.searchKeyword) return
-    const doc = document.documentElement
-    const atTop = window.scrollY <= 1
-    const atBottom =
-      window.scrollY + window.innerHeight >= doc.scrollHeight - 2
-    if (!atTop && !atBottom) return
+    // 仅桌面端固定布局启用
+    if (window.innerWidth < 768) return
+    const box: HTMLElement | null = document.querySelector('.sim .site-box')
+    if (!box) return
+
+    const atTop = box.scrollTop <= 1
+    const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 2
 
     const dir = e.deltaY > 0 ? 1 : -1
-    if (dir < 0 && !atTop) return
     if (dir > 0 && !atBottom) return
+    if (dir < 0 && !atTop) return
 
     const list = this.commonService.navs() || []
     const next = this.commonService.oneIndex + dir
@@ -119,6 +123,7 @@ export default class SimComponent implements OnDestroy {
     this.wheelLock = true
     setTimeout(() => (this.wheelLock = false), 700)
     this.commonService.handleClickClass(list[next].id)
-    window.scrollTo({ top: 0, behavior: 'auto' })
+    // 切换后卡片区域回到顶部
+    box.scrollTop = 0
   }
 }
