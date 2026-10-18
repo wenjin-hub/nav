@@ -39,14 +39,23 @@
   }
 }
 
-// 编辑模式浮动操作按钮（example/original 卡片样式专用，不占布局高度）
+// 编辑模式浮动操作按钮（example/original/retro 卡片样式专用，不占布局高度）
+// 定位在卡片下方正中间，避免遮挡右上角标题文字
 .edit-actions {
   position: absolute;
-  top: 6px;
-  right: 8px;
-  z-index: 4;
+  bottom: 5px;
+  top: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  z-index: 8;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+  padding: 1px 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s;
@@ -54,8 +63,6 @@
     font-size: 14px;
     color: #8c8c8c;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 4px;
     padding: 2px;
     &:hover {
       color: #1677ff;
@@ -67,7 +74,8 @@
 }
 
 .example2:hover,
-.original2:hover {
+.original2:hover,
+.retro2:hover {
   .edit-actions {
     opacity: 1;
     pointer-events: auto;
@@ -321,6 +329,7 @@
   border: 1px solid #eee;
   border-radius: 4px;
   transition: transform 0.1s linear;
+  overflow: hidden;
   &:hover {
     transform: translate(0, -3px);
   }
@@ -333,24 +342,46 @@
     font-size: 15px;
     margin-left: 4px;
     font-weight: 500;
+    // 标题固定一行，保证有无描述卡片高度一致
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .desc {
     word-break: break-all;
     word-wrap: break-word;
-    white-space: pre-wrap;
-    font-size: 13px;
-    margin-bottom: 5px;
+    // 固定两行，超出省略；压缩行距让卡片整体高度保持一致
+    font-size: 12px;
+    line-height: 17px;
+    height: 34px;
+    margin-bottom: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    overflow: hidden;
   }
 
   .top {
-    padding: 10px;
+    // 标题行固定高度，缩小分隔线与上下文字的间距
+    height: 38px;
+    padding: 0 10px;
     display: flex;
     align-items: center;
     border-bottom: 1px solid #eee;
   }
   .border-transparent {
     border-color: transparent;
+  }
+
+  // 描述区固定高度（两行 34px + 上边距 4px），有无描述卡片高度都不变，
+  // 且刚好裁掉多余内容（避免标签/多余行在卡片底部露出一条边）
+  .retro-body {
+    height: 38px;
+    padding: 4px 10px 0;
+    overflow: hidden;
   }
 }
 

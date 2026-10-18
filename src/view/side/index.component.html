@@ -170,7 +170,8 @@
                       </div>
                     </div>
 
-                    <app-no-data *ngIf="two.nav?.length === 0" />
+                    <!-- 分类下没有网址时：仅保留一行卡片高度的空白，不显示大提示框 -->
+                    <div class="empty-block" *ngIf="two.nav?.length === 0"></div>
                   </div>
                 </ng-container>
               </div>

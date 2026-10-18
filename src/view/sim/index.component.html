@@ -5,15 +5,17 @@
     class="position-center mt-2.5"
   />
 
+  <!-- 右上角访问登录入口 -->
+  <app-access-login class="sim-access-login" />
+
+  <!-- 首页搜索区：置于图片上方，与 Side 主题同款（图片 + 类别/搜索框/引擎行，高度一致） -->
   <div
     class="wallpaper"
     *ngIf="commonService.settings().simThemeImages.length > 0"
-    [class.bootstrap]="commonService.settings().simThemeHeight < 260"
   >
-    <app-swiper
+    <app-hero-search
       [images]="commonService.settings().simThemeImages"
-      [autoplay]="commonService.settings().simThemeAutoplay"
-      [height]="commonService.settings().simThemeHeight"
+      [height]="commonService.settings().simThemeHeight || 320"
     />
   </div>
 
@@ -132,8 +134,12 @@
         </div>
       </div>
 
+      <!-- 无结果：搜索时显示提示框，普通浏览时空分类仅保留一行卡片高度的空白 -->
       <ng-template #noData>
-        <app-no-data></app-no-data>
+        <app-no-data *ngIf="commonService.searchKeyword; else emptyBlock" />
+        <ng-template #emptyBlock>
+          <div class="empty-block"></div>
+        </ng-template>
       </ng-template>
     </aside>
   </div>

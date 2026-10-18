@@ -85,6 +85,11 @@
     margin-bottom: 10px;
   }
 
+  // 分类下没有网址时：只保留一行卡片高度的空白
+  .empty-block {
+    height: 86px;
+  }
+
   // 右上角访问登录入口（侧栏 200px 之外）
   ::ng-deep .side-access-login {
     position: fixed;

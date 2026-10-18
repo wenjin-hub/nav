@@ -46,6 +46,27 @@
   background: #f0f2f5;
 }
 
+// 右上角访问登录入口
+::ng-deep .sim-access-login {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 40;
+}
+
+// 分类下没有网址时：只保留一行卡片高度的空白
+.site-box .empty-block {
+  height: 86px;
+}
+
+// 首页搜索区（与 Side 主题同款）：图片 + 搜索模块，高度由后台设置统一控制
+.wallpaper {
+  ::ng-deep .hero {
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+  }
+}
+
 .top-nav {
   position: relative;
   max-width: var(--width);

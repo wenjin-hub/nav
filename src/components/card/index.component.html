@@ -245,7 +245,7 @@
                 [innerHTML]="dataSource.name"
               ></div>
             </div>
-            <div class="p-2.5">
+            <div class="retro-body">
               <div
                 class="desc ellipsis3 dark-white"
                 *ngIf="dataSource.desc"
@@ -262,6 +262,34 @@
               />
             </div>
           </div>
+        </div>
+
+        <!-- 编辑模式：浮动操作按钮（不占布局高度） -->
+        <div class="edit-actions" *ngIf="editMode()" (click)="$event.stopPropagation()">
+          <i
+            nz-icon
+            nzType="edit"
+            nzTheme="outline"
+            nz-tooltip
+            [nzTooltipTitle]="$t('_edit')"
+            (click)="openEditWebMoal()"
+          ></i>
+          <i
+            nz-icon
+            nzType="swap"
+            nzTheme="outline"
+            nz-tooltip
+            [nzTooltipTitle]="$t('_move')"
+            (click)="openMoveWebModal()"
+          ></i>
+          <i
+            nz-icon
+            nzType="delete"
+            nzTheme="outline"
+            nz-tooltip
+            [nzTooltipTitle]="$t('_delete')"
+            (click)="confirmDel()"
+          ></i>
         </div>
       </div>
 
