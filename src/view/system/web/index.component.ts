@@ -29,6 +29,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button'
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm'
 import { NzIconModule } from 'ng-zorro-antd/icon'
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox'
+import { NzModalModule } from 'ng-zorro-antd/modal'
 import { LogoComponent } from 'src/components/logo/logo.component'
 import event from 'src/utils/mitt'
 import config from '../../../../nav.config.json'
@@ -46,6 +47,7 @@ type RowKind = 'one' | 'two' | 'three' | 'web'
     NzPopconfirmModule,
     NzIconModule,
     NzCheckboxModule,
+    NzModalModule,
     LogoComponent,
   ],
   selector: 'app-web',

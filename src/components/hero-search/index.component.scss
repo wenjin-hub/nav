@@ -7,79 +7,58 @@
   align-items: center;
   justify-content: center;
 
-  // 底部渐变遮罩，让图片与页面奶油色背景自然衔接
-  .hero-mask {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.06) 0%,
-      rgba(247, 250, 252, 0.1) 62%,
-      #f7fafc 100%
-    );
-    pointer-events: none;
-  }
-
-  &.no-img {
-    background: linear-gradient(135deg, #e9f5ff 0%, #f6fbff 55%, #f7fafc 100%);
-  }
-
   .hero-inner {
     position: relative;
     z-index: 1;
-    width: min(640px, 88%);
-    margin-top: -20px;
+    width: min(620px, 86%);
+    margin-top: -12px;
   }
 
-  // 第一行：搜索类别
+  // ===== 第一行：搜索类别（线条式，无色块） =====
   .hero-cats {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 8px 18px;
-    margin-bottom: 14px;
+    gap: 8px 26px;
+    margin-bottom: 16px;
   }
 
   .hero-cat {
-    padding: 4px 14px;
+    padding: 4px 2px 7px;
     font-size: 15px;
-    border-radius: 999px;
     cursor: pointer;
-    color: #eaf6ff;
-    text-shadow: 0 1px 3px rgba(40, 90, 130, 0.45);
+    color: rgba(255, 255, 255, 0.88);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+    border-bottom: 2px solid transparent;
     transition: all 0.15s;
     user-select: none;
     &:hover {
-      opacity: 0.85;
+      color: #fff;
     }
     &.active {
-      background: rgba(255, 255, 255, 0.92);
-      color: #2f95f0;
+      color: #fff;
       font-weight: 600;
-      text-shadow: none;
-      box-shadow: 0 2px 8px rgba(60, 130, 190, 0.25);
+      border-bottom-color: rgba(255, 255, 255, 0.95);
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     }
   }
 
-  .no-img .hero-cat {
-    color: #5e7183;
-    text-shadow: none;
-    background: rgba(255, 255, 255, 0.75);
-    &.active {
-      background: #fff;
-      color: #2f95f0;
-      box-shadow: 0 2px 8px rgba(60, 130, 190, 0.2);
-    }
-  }
-
-  // 第二行：搜索框
+  // ===== 第二行：搜索框（线条式：透明底 + 白色描边 + 轻毛玻璃） =====
   .hero-input-box {
     display: flex;
     align-items: center;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: 999px;
-    padding: 4px 6px 4px 20px;
-    box-shadow: 0 4px 18px rgba(80, 140, 200, 0.18);
+    padding: 4px 5px 4px 20px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+    transition: border-color 0.15s, background 0.15s;
+    &:focus-within {
+      border-color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+    }
 
     input {
       flex: 1;
@@ -88,64 +67,102 @@
       outline: none;
       height: 38px;
       font-size: 15px;
-      color: #33475b;
+      color: #fff;
       background: transparent;
       &::placeholder {
-        color: #a8b6c4;
+        color: rgba(255, 255, 255, 0.75);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
       }
     }
 
     .hero-btn {
       flex-shrink: 0;
-      padding: 8px 24px;
+      padding: 7px 22px;
       border-radius: 999px;
-      background: #6cb8f9;
+      border: 1px solid rgba(255, 255, 255, 0.85);
       color: #fff;
       font-size: 14px;
       cursor: pointer;
       user-select: none;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
       transition: background 0.15s;
       &:hover {
-        background: #54aaf6;
+        background: rgba(255, 255, 255, 0.22);
       }
     }
   }
 
-  // 第三行：搜索引擎
+  // ===== 第三行：搜索引擎（线条式） =====
   .hero-engines {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 6px 14px;
+    gap: 6px 22px;
     margin-top: 14px;
   }
 
   .hero-engine {
-    padding: 3px 12px;
+    padding: 3px 2px 5px;
     font-size: 13px;
-    border-radius: 999px;
     cursor: pointer;
-    color: #f2faff;
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(4px);
+    color: rgba(255, 255, 255, 0.82);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+    border-bottom: 1.5px solid transparent;
     transition: all 0.15s;
     user-select: none;
     &:hover {
-      background: rgba(255, 255, 255, 0.32);
+      color: #fff;
     }
     &.active {
-      background: #fff;
-      color: #2f95f0;
+      color: #fff;
       font-weight: 600;
+      border-bottom-color: rgba(255, 255, 255, 0.9);
     }
   }
 
-  .no-img .hero-engine {
-    color: #5e7183;
-    background: rgba(255, 255, 255, 0.8);
-    &.active {
-      background: #fff;
-      color: #2f95f0;
+  // ===== 无背景图兜底：浅色底 + 深色线条 =====
+  &.no-img {
+    background: linear-gradient(135deg, #e9f5ff 0%, #f6fbff 55%, #f7fafc 100%);
+
+    .hero-cat {
+      color: #5e7183;
+      text-shadow: none;
+      &.active {
+        color: #2f95f0;
+        border-bottom-color: #6cb8f9;
+      }
+    }
+
+    .hero-input-box {
+      background: rgba(255, 255, 255, 0.6);
+      border-color: #a9d4f7;
+      &:focus-within {
+        border-color: #6cb8f9;
+      }
+      input {
+        color: #33475b;
+        &::placeholder {
+          color: #a8b6c4;
+          text-shadow: none;
+        }
+      }
+      .hero-btn {
+        color: #2f95f0;
+        border-color: #6cb8f9;
+        text-shadow: none;
+        &:hover {
+          background: rgba(108, 184, 249, 0.14);
+        }
+      }
+    }
+
+    .hero-engine {
+      color: #5e7183;
+      text-shadow: none;
+      &.active {
+        color: #2f95f0;
+        border-bottom-color: #6cb8f9;
+      }
     }
   }
 }

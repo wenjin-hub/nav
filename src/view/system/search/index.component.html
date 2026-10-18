@@ -1,3 +1,57 @@
+<!-- ===== 首页搜索区（Side / App 首页大搜索框） ===== -->
+<div class="hero-cfg">
+  <div class="hero-cfg-header">
+    <h3>首页搜索区</h3>
+    <span class="hero-cfg-tip">
+      Side / App 主题首页的大搜索框：类别可增删；每个类别可配置多个搜索引擎，地址用
+      <code>$&#123;q&#125;</code> 代表关键词；不配引擎的类别 = 站内搜索
+    </span>
+    <span class="hero-cfg-btns">
+      <button nz-button (click)="addHeroCategory()">新增类别</button>
+      <button
+        nz-button
+        nzType="primary"
+        [nzLoading]="heroSaving"
+        (click)="handleSaveHero()"
+      >
+        保存搜索区
+      </button>
+    </span>
+  </div>
+
+  <div class="hero-cat-card" *ngFor="let cat of heroCfg; index as ci">
+    <div class="hero-cat-row">
+      <span class="hero-cat-label">类别名</span>
+      <input nz-input [(ngModel)]="cat.name" maxlength="8" style="width: 140px" />
+      <button nz-button nzDanger nzSize="small" (click)="delHeroCategory(ci)">
+        删除类别
+      </button>
+    </div>
+    <div class="hero-engine-row" *ngFor="let eng of cat.engines; index as ei">
+      <span class="hero-cat-label">引擎</span>
+      <input
+        nz-input
+        [(ngModel)]="eng.name"
+        placeholder="名称"
+        maxlength="10"
+        style="width: 120px"
+      />
+      <input
+        nz-input
+        [(ngModel)]="eng.url"
+        placeholder="https://example.com/search?q=$&#123;q&#125;"
+        style="flex: 1; min-width: 260px"
+      />
+      <a class="!text-red-500" (click)="delHeroEngine(ci, ei)">删除</a>
+    </div>
+    <button nz-button nzSize="small" (click)="addHeroEngine(ci)">
+      + 添加引擎
+    </button>
+  </div>
+</div>
+
+<nz-divider nzText="顶部搜索栏引擎（页头小搜索框）"></nz-divider>
+
 <button
   nz-button
   (click)="handleAdd()"

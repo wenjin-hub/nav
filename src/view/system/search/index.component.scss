@@ -17,3 +17,61 @@
     font-size: 20px;
   }
 }
+
+// ===== 首页搜索区配置 =====
+.hero-cfg {
+  margin-bottom: 8px;
+  .hero-cfg-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-bottom: 12px;
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #33475b;
+    }
+    .hero-cfg-tip {
+      flex: 1;
+      min-width: 260px;
+      font-size: 12px;
+      color: #8a9aa9;
+      code {
+        background: #eef6fd;
+        padding: 1px 5px;
+        border-radius: 4px;
+        color: #2f95f0;
+      }
+    }
+    .hero-cfg-btns {
+      display: inline-flex;
+      gap: 8px;
+    }
+  }
+
+  .hero-cat-card {
+    border: 1px solid #e3eef8;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #fbfdff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .hero-cat-row,
+    .hero-engine-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .hero-cat-label {
+      flex-shrink: 0;
+      font-size: 13px;
+      color: #5e7183;
+      width: 52px;
+    }
+  }
+}

@@ -6,6 +6,7 @@ import { Component, OnDestroy } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { CommonService } from 'src/services/common'
 import { SearchComponent } from 'src/components/search/index.component'
+import { HeroSearchComponent } from 'src/components/hero-search/index.component'
 import { CardComponent } from 'src/components/card/index.component'
 import { FooterComponent } from 'src/components/footer/footer.component'
 import { ToolbarTitleWebComponent } from 'src/components/toolbar-title/index.component'
@@ -25,6 +26,7 @@ import { debounceTime } from 'rxjs/operators'
   imports: [
     CommonModule,
     SearchComponent,
+    HeroSearchComponent,
     CardComponent,
     FooterComponent,
     ToolbarTitleWebComponent,

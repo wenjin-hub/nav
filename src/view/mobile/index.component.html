@@ -67,7 +67,12 @@
     </div>
   </header>
 
-  <app-search class="mt-2.5 flow-root" />
+  <!-- 首页搜索区（与 Side 端一致，类别 + 搜索框 + 引擎行） -->
+  <app-hero-search
+    class="flow-root"
+    [images]="commonService.settings().sideThemeImages"
+    [height]="260"
+  />
 
   <!-- 搜索模式：保留原有「只显示匹配结果」的渲染 -->
   <div class="wrapper" *ngIf="commonService.searchKeyword; else fullPage">

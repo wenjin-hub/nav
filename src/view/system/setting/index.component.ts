@@ -201,30 +201,6 @@ export default class SystemSettingComponent {
     return compilerTemplate(this.validateForm.get('footerContent')?.value || '')
   }
 
-  // ===== 首页搜索区配置（类别 + 每类别多个搜索引擎） =====
-  searchCfg: { name: string; engines: { name: string; url: string }[] }[] = (
-    settings().searchCategories || []
-  ).map((c) => ({
-    name: c.name,
-    engines: (c.engines || []).map((e) => ({ name: e.name, url: e.url })),
-  }))
-
-  addSearchCategory() {
-    this.searchCfg.push({ name: '新类别', engines: [] })
-  }
-
-  delSearchCategory(i: number) {
-    this.searchCfg.splice(i, 1)
-  }
-
-  addEngine(ci: number) {
-    this.searchCfg[ci].engines.push({ name: '', url: '' })
-  }
-
-  delEngine(ci: number, ei: number) {
-    this.searchCfg[ci].engines.splice(ei, 1)
-  }
-
   onFootTemplateChange(v: any) {
     this.validateForm
       .get('footerContent')!
@@ -331,13 +307,8 @@ export default class SystemSettingComponent {
       const values = {
         ...formValues,
         favicon: this.settings.favicon,
-        // 首页搜索区配置（独立编辑区，不放在 form 里）
-        searchCategories: this.searchCfg
-          .filter((c) => c.name.trim())
-          .map((c) => ({
-            name: c.name.trim(),
-            engines: c.engines.filter((e) => e.name.trim() && e.url.trim()),
-          })),
+        // 首页搜索区配置在「搜索引擎」页维护，这里原样保留避免被冲掉
+        searchCategories: settings().searchCategories || [],
         simThemeImages: this.settings.simThemeImages.filter(filterImage),
         shortcutThemeImages:
           this.settings.shortcutThemeImages.filter(filterImage),

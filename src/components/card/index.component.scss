@@ -170,11 +170,24 @@
     flex: 1;
     width: 0;
     margin-left: 12px;
+    // 描述区固定高度（标题一行 + 描述两行），有无描述卡片高度都不变
+    height: 56px;
+    overflow: hidden;
   }
   .desc {
     width: 100%;
     margin: 0;
     font-size: 12px;
+    // 固定两行，超出省略
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    word-break: break-all;
+    overflow: hidden;
+    line-height: 17px;
+    height: 34px;
   }
 }
 
