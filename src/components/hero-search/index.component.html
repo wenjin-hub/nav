@@ -1,0 +1,44 @@
+<div
+  class="hero"
+  [class.no-img]="!currentBg"
+  [style.height.px]="height"
+  [style.background-image]="currentBg ? 'url(' + currentBg + ')' : ''"
+>
+  <div class="hero-mask"></div>
+  <div class="hero-inner">
+    <!-- 第一行：搜索类别 -->
+    <div class="hero-cats">
+      <span
+        class="hero-cat"
+        *ngFor="let cat of categories; let i = index"
+        [class.active]="i === activeCat"
+        (click)="selectCat(i)"
+      >
+        {{ cat.name }}
+      </span>
+    </div>
+
+    <!-- 第二行：搜索框 -->
+    <div class="hero-input-box">
+      <input
+        type="text"
+        [(ngModel)]="keyword"
+        (keydown.enter)="trigger($event)"
+        placeholder="输入关键词，回车搜索"
+      />
+      <span class="hero-btn" (click)="trigger($event)">搜索</span>
+    </div>
+
+    <!-- 第三行：当前类别的搜索引擎（未配置则不显示） -->
+    <div class="hero-engines" *ngIf="enginesOf(activeCat).length">
+      <span
+        class="hero-engine"
+        *ngFor="let eng of enginesOf(activeCat); let ei = index"
+        [class.active]="ei === getActiveEngineIdx()"
+        (click)="selectEngine(ei)"
+      >
+        {{ eng.name }}
+      </span>
+    </div>
+  </div>
+</div>

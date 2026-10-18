@@ -1,11 +1,12 @@
 // 开源项目，未经作者同意，不得以抄袭/复制代码/修改源代码版权信息。
-// Copyright @ 2018-present xiejiahe. All rights reserved.
+// Copyright @ 2018-present xie.jiahe. All rights reserved.
 // See https://github.com/liuzi6612/nav
+// Edge 收藏夹风格重构：左侧目录树 + 右侧下一级内容，支持批量拖拽移动/删除、拖拽排序
 
 import { Component } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { FormsModule, ReactiveFormsModule } from '@angular/forms'
-import type { INavTwoProp, INavThreeProp, IWebProps } from 'src/types'
+import type { IWebProps } from 'src/types'
 import { navs, settings, search, tagList, internal, component } from 'src/store'
 import { isLogin, removeWebsite } from 'src/utils/user'
 import { NzMessageService } from 'ng-zorro-antd/message'
@@ -24,45 +25,28 @@ import {
 import { $t } from 'src/locale'
 import { saveAs } from 'file-saver'
 import { isSelfDevelop } from 'src/utils/utils'
-import { NzInputModule } from 'ng-zorro-antd/input'
 import { NzButtonModule } from 'ng-zorro-antd/button'
-import { NzSpinModule } from 'ng-zorro-antd/spin'
-import { NzTableModule } from 'ng-zorro-antd/table'
-import { NzTabsModule } from 'ng-zorro-antd/tabs'
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm'
-import { NzSelectModule } from 'ng-zorro-antd/select'
 import { NzIconModule } from 'ng-zorro-antd/icon'
-import { NzModalModule } from 'ng-zorro-antd/modal'
-import { NzFormModule } from 'ng-zorro-antd/form'
-import { NzSwitchModule } from 'ng-zorro-antd/switch'
-import { NzTooltipModule } from 'ng-zorro-antd/tooltip'
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox'
 import { LogoComponent } from 'src/components/logo/logo.component'
-import { TagListComponent } from 'src/components/tag-list/index.component'
-import { CommonService } from 'src/services/common'
 import event from 'src/utils/mitt'
 import config from '../../../../nav.config.json'
 import { cleanWebAttrs } from 'src/utils/pureUtils'
+
+type RowKind = 'one' | 'two' | 'three' | 'web'
 
 @Component({
   standalone: true,
   imports: [
     CommonModule,
-    NzTooltipModule,
     FormsModule,
     ReactiveFormsModule,
-    NzInputModule,
     NzButtonModule,
-    NzSpinModule,
-    NzTableModule,
-    NzTabsModule,
     NzPopconfirmModule,
-    NzSelectModule,
-    LogoComponent,
     NzIconModule,
-    NzModalModule,
-    NzFormModule,
-    NzSwitchModule,
-    TagListComponent,
+    NzCheckboxModule,
+    LogoComponent,
   ],
   selector: 'app-web',
   templateUrl: './index.component.html',
@@ -76,163 +60,318 @@ export default class WebpComponent {
   readonly gitRepoUrl = config.gitRepoUrl
   readonly isLogin = isLogin
   navs = navs
-  showCreateModal = false
   syncLoading = false
-  uploading = false
-  tabActive = 0
-  oneSelect = -1
-  twoSelect = -1
-  threeSelect = -1
-  checkedAll = false
-  setOfCheckedId = new Set<number>()
-  errorWebs: IWebProps[] = []
+
+  // ===== 树状态 =====
+  expanded = new Set<number>()
+  selOneId = -1
+  selTwoId = -1
+  selThreeId = -1
+
+  // ===== 勾选 / 拖拽 =====
+  checked = new Set<number>()
+  dragIds: number[] = []
+  dragKind: RowKind | '' = ''
+  dropTargetId = -1
 
   constructor(
     private modal: NzModalService,
     private notification: NzNotificationService,
     private message: NzMessageService,
-    public commonService: CommonService,
   ) {}
 
-  ngOnInit() {}
-
-  get oneIndex() {
-    return this.navs().findIndex((item) => item.id === this.oneSelect)
+  // ===== 节点获取 =====
+  get oneNode() {
+    return this.navs().find((n) => n.id === this.selOneId)
+  }
+  get twoNode() {
+    return this.oneNode?.nav?.find((n) => n.id === this.selTwoId)
+  }
+  get threeNode() {
+    return this.twoNode?.nav?.find((n) => n.id === this.selThreeId)
   }
 
-  get twoIndex() {
-    try {
-      return this.twoTableData.findIndex((item) => item.id === this.twoSelect)
-    } catch {
-      return -1
+  // 右侧当前列表 + 类型
+  get rightList(): any[] {
+    if (this.selThreeId !== -1) return this.threeNode?.nav || []
+    if (this.selTwoId !== -1) return this.twoNode?.nav || []
+    if (this.selOneId !== -1) return this.oneNode?.nav || []
+    return this.navs()
+  }
+  get rightKind(): RowKind {
+    if (this.selThreeId !== -1) return 'web'
+    if (this.selTwoId !== -1) return 'three'
+    if (this.selOneId !== -1) return 'two'
+    return 'one'
+  }
+  get rightTitle(): string {
+    if (this.selThreeId !== -1) return this.threeNode?.title || ''
+    if (this.selTwoId !== -1) return this.twoNode?.title || ''
+    if (this.selOneId !== -1) return this.oneNode?.title || ''
+    return '根目录（一级分类）'
+  }
+
+  // 当前选中目录对应的「容器 nav」（用于接收拖拽放入）
+  get currentContainerNav(): any[] | null {
+    if (this.selThreeId !== -1) return this.threeNode?.nav || null
+    if (this.selTwoId !== -1) return this.twoNode?.nav || null
+    if (this.selOneId !== -1) return this.oneNode?.nav || null
+    return null
+  }
+
+  // ===== 选择 =====
+  toggleExpand(id: number, e: Event) {
+    e.stopPropagation()
+    if (this.expanded.has(id)) this.expanded.delete(id)
+    else this.expanded.add(id)
+  }
+
+  selectOne(id: number) {
+    this.selOneId = id
+    this.selTwoId = -1
+    this.selThreeId = -1
+    this.checked.clear()
+    if (!this.expanded.has(id)) this.expanded.add(id)
+  }
+  selectTwo(id: number) {
+    this.selTwoId = id
+    this.selThreeId = -1
+    this.checked.clear()
+    if (!this.expanded.has(id)) this.expanded.add(id)
+  }
+  selectThree(id: number) {
+    this.selThreeId = id
+    this.checked.clear()
+  }
+
+  get allChecked(): boolean {
+    return this.rightList.length > 0 && this.checked.size === this.rightList.length
+  }
+  toggleAll(e: any) {
+    this.checked.clear()
+    if (e.target.checked) {
+      this.rightList.forEach((item) => this.checked.add(item.id))
+    }
+  }
+  toggleCheck(id: number, e: any) {
+    if (e.target.checked) this.checked.add(id)
+    else this.checked.delete(id)
+  }
+
+  // ===== 拖拽 =====
+  onDragStartRow(item: any, e: DragEvent) {
+    const kind = this.rightKind
+    if (kind === 'one') {
+      this.dragIds = [item.id]
+      this.dragKind = 'one'
+    } else if (this.checked.has(item.id) && this.checked.size > 1) {
+      this.dragIds = [...this.checked]
+      this.dragKind = kind
+    } else {
+      this.dragIds = [item.id]
+      this.dragKind = kind
+    }
+    e.dataTransfer?.setData('text/plain', String(item.id))
+  }
+
+  onDragEnd() {
+    this.dragIds = []
+    this.dragKind = ''
+    this.dropTargetId = -1
+  }
+
+  // 树节点接受哪种拖拽：一级收二级、二级收三级、三级收网址
+  nodeAccepts(level: 0 | 1 | 2): boolean {
+    if (this.dragKind === 'two') return level === 0
+    if (this.dragKind === 'three') return level === 1
+    if (this.dragKind === 'web') return level === 2
+    return false
+  }
+
+  onDragOverNode(node: any, level: 0 | 1 | 2, e: DragEvent) {
+    if (!this.dragKind || !this.nodeAccepts(level)) return
+    e.preventDefault()
+    this.dropTargetId = node.id
+  }
+
+  onDropNode(node: any, e: DragEvent) {
+    e.preventDefault()
+    if (!this.dragIds.length) return
+    this.moveInto(node.nav || [])
+  }
+
+  // 拖到右侧面板头部 = 放入当前目录
+  onDragOverPanel(e: DragEvent) {
+    if (!this.dragKind || this.dragKind === 'one') return
+    e.preventDefault()
+    this.dropTargetId = -2 // -2 表示面板放置区
+  }
+
+  onDropPanel(e: DragEvent) {
+    e.preventDefault()
+    if (!this.dragIds.length) return
+    const target = this.currentContainerNav
+    if (!target) return
+    this.moveInto(target)
+  }
+
+  // 拖到某一行上 = 排序到该行之前
+  onDragOverRow(item: any, e: DragEvent) {
+    if (!this.dragKind) return
+    e.preventDefault()
+    e.stopPropagation()
+    this.dropTargetId = item.id
+  }
+
+  onDropRow(item: any, e: DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!this.dragIds.length) return
+    if (this.dragKind === 'one' || this.dropTargetId === item.id) {
+      this.moveBefore(item.id)
+    } else {
+      // 跨层级拖到行上时，尝试放入该行所在容器
+      const loc = this.locate(item.id)
+      if (loc) this.moveInto(loc.list)
     }
   }
 
-  get threeIndex() {
-    try {
-      return this.threeTableData.findIndex(
-        (item) => item.id === this.threeSelect,
-      )
-    } catch {
-      return -1
-    }
-  }
-
-  get twoTableData(): INavTwoProp[] {
-    try {
-      return this.navs().find((item) => item.id === this.oneSelect)?.nav || []
-    } catch {
-      return []
-    }
-  }
-
-  get threeTableData(): INavThreeProp[] {
-    try {
-      return (
-        this.twoTableData.find((item) => item.id === this.twoSelect)?.nav || []
-      )
-    } catch {
-      return []
-    }
-  }
-
-  get websiteTableData(): IWebProps[] {
-    try {
-      const data = this.threeTableData.find(
-        (item) => item.id === this.threeSelect,
-      )
-      if (data) {
-        return data.nav
+  // ===== 移动实现 =====
+  locate(
+    id: number,
+    list: any[] = this.navs(),
+  ): { list: any[]; index: number } | null {
+    for (let i = 0; i < list.length; i++) {
+      if (list[i]?.id === id) return { list, index: i }
+      if (Array.isArray(list[i]?.nav)) {
+        const r = this.locate(id, list[i].nav)
+        if (r) return r
       }
-      return this.errorWebs
-    } catch {
-      return this.errorWebs
     }
+    return null
   }
 
-  getErrorWebs() {
-    this.oneSelect = -1
-    this.twoSelect = -1
-    this.threeSelect = -1
-    this.onTabChange()
-    const errorWebs: IWebProps[] = []
-    function r(nav: any) {
-      if (!Array.isArray(nav)) return
+  // 被拖文件夹的子树里是否包含目标容器（防止把父目录移进自己）
+  hasRef(node: any, ref: any[]): boolean {
+    if (!Array.isArray(node?.nav)) return false
+    if (node.nav === ref) return true
+    return node.nav.some((c: any) => !c.url && this.hasRef(c, ref))
+  }
 
-      for (let i = 0; i < nav.length; i++) {
-        const item = nav[i]
-        if (item.url && item.ok === false) {
-          errorWebs.push(item)
-        } else {
-          r(item.nav)
+  moveInto(targetNav: any[]) {
+    let moved = 0
+    for (const id of this.dragIds) {
+      const loc = this.locate(id)
+      if (!loc) continue
+      if (loc.list === targetNav) continue
+      const item = loc.list[loc.index]
+      if (!item.url && this.hasRef(item, targetNav)) continue
+      loc.list.splice(loc.index, 1)
+      targetNav.push(item)
+      moved++
+    }
+    if (moved) {
+      setNavs(this.navs())
+      this.message.success(`已移动 ${moved} 项到「${this.dropTargetName(targetNav)}」，记得点「保 存」同步`)
+    }
+    this.onDragEnd()
+    this.checked.clear()
+  }
+
+  dropTargetName(targetNav: any[]): string {
+    const findTitle = (list: any[]): string => {
+      for (const n of list) {
+        if (n.nav === targetNav) return n.title
+        if (Array.isArray(n.nav)) {
+          const t = findTitle(n.nav)
+          if (t) return t
         }
       }
+      return ''
     }
-    r(this.navs())
-    this.errorWebs = errorWebs
-    if (errorWebs.length <= 0) {
-      this.message.success('No error!')
+    return findTitle(this.navs()) || '目标目录'
+  }
+
+  moveBefore(targetId: number) {
+    const tLoc = this.locate(targetId)
+    if (!tLoc) return
+    const list = tLoc.list
+    let tIndex = tLoc.index
+    const items: any[] = []
+    for (const id of this.dragIds) {
+      const idx = list.findIndex((x) => x.id === id)
+      if (idx === -1) continue
+      items.push(list[idx])
+      list.splice(idx, 1)
+      if (idx < tIndex) tIndex--
+    }
+    if (items.length) {
+      list.splice(tIndex, 0, ...items)
+      setNavs(this.navs())
+      this.message.success('排序已更新，记得点「保 存」同步')
+    }
+    this.onDragEnd()
+  }
+
+  // ===== 新增 / 编辑 / 删除 =====
+  openCreate() {
+    if (this.rightKind === 'web') {
+      event.emit('CREATE_WEB', { parentId: this.selThreeId })
+      return
+    }
+    if (this.rightKind === 'three') {
+      event.emit('EDIT_CLASS_OPEN', { id: this.selTwoId })
+      return
+    }
+    if (this.rightKind === 'two') {
+      event.emit('EDIT_CLASS_OPEN', { id: this.selOneId })
+      return
+    }
+    event.emit('EDIT_CLASS_OPEN', {})
+  }
+
+  openEdit(item: any) {
+    if (item.url) {
+      event.emit('CREATE_WEB', { detail: item })
     } else {
-      this.message.warning(`检测出 ${errorWebs.length} 个网站疑似异常`)
+      event.emit('EDIT_CLASS_OPEN', {
+        title: item.title,
+        icon: item.icon,
+        id: item.id,
+        ownVisible: item.ownVisible,
+      })
     }
   }
 
-  onCheckAll(checked: boolean) {
-    this.setOfCheckedId.clear()
-    this.checkedAll = checked
-    const data = [
-      this.navs(),
-      this.twoTableData,
-      this.threeTableData,
-      this.websiteTableData,
-    ]
-    data[this.tabActive].forEach((item) => {
-      if (checked) {
-        this.setOfCheckedId.add(item.id)
-      } else {
-        this.setOfCheckedId.delete(item.id)
-      }
+  delItems(ids: number[], isClass: boolean) {
+    event.emit('DELETE_MODAL', {
+      ids,
+      isClass,
+      onComplete: () => this.cleanSelection(),
     })
   }
 
-  onItemChecked(id: number, checked: boolean) {
-    if (checked) {
-      this.setOfCheckedId.add(id)
-    } else {
-      this.setOfCheckedId.delete(id)
-    }
+  onBatchDelete() {
+    if (!this.checked.size) return
+    this.delItems([...this.checked], this.rightKind !== 'web')
   }
 
-  async onBatchDelete() {
-    switch (this.tabActive) {
-      case 0:
-      case 1:
-      case 2:
-        event.emit('DELETE_MODAL', {
-          ids: [...this.setOfCheckedId],
-          isClass: true,
-          onComplete: () => {
-            this.onTabChange()
-          },
-        })
-        break
-
-      case 3:
-        event.emit('DELETE_MODAL', {
-          ids: [...this.setOfCheckedId],
-          ok: () => {
-            if (this.errorWebs.length) {
-              this.getErrorWebs()
-            }
-          },
-          onComplete: () => {
-            this.onTabChange()
-          },
-        })
-        break
-    }
+  // 删除后清理失效的选中状态
+  cleanSelection() {
+    if (this.selOneId !== -1 && !this.locate(this.selOneId)) this.selectTop()
+    else if (this.selTwoId !== -1 && !this.locate(this.selTwoId)) this.selectOne(this.selOneId)
+    else if (this.selThreeId !== -1 && !this.locate(this.selThreeId)) this.selectTwo(this.selTwoId)
+    this.checked.clear()
   }
 
+  selectTop() {
+    this.selOneId = -1
+    this.selTwoId = -1
+    this.selThreeId = -1
+    this.checked.clear()
+  }
+
+  // ===== 以下为原有能力：同步 / 备份 / 恢复 =====
   handleRestoreData() {
     this.modal.info({
       nzTitle: $t('_resetInitData'),
@@ -272,93 +411,27 @@ export default class WebpComponent {
     const file = files[0]
     const fileReader = new FileReader()
     fileReader.readAsText(file)
-    fileReader.onload = async function (file) {
+    fileReader.onload = async function (ev: any) {
       try {
-        const { result } = file.target as any
+        const { result } = ev.target as any
         const data = JSON.parse(result)
-
-        try {
-          await updateFileContent({
-            message: 'import db',
-            content: JSON.stringify(data.db),
-            path: DB_PATH,
-            refresh: false,
-          })
-          that.notification.success('OK', 'DB import successful')
-        } catch {
-          that.notification.error('Error', 'DB import failed', {
-            nzDuration: 0,
-          })
-        }
-        try {
+        await updateFileContent({
+          message: 'import db',
+          content: JSON.stringify(data.db),
+          path: DB_PATH,
+          refresh: false,
+        })
+        that.notification.success('OK', 'DB import successful')
+        if (data.settings) {
           await updateFileContent({
             message: 'import settings',
-            content: JSON.stringify({
-              ...settings,
-              ...data.settings,
-            }),
+            content: JSON.stringify({ ...settings(), ...data.settings }),
             path: SETTING_PATH,
             refresh: false,
           })
           that.notification.success('OK', 'settings import successful')
-        } catch {
-          that.notification.error('Error', 'settings import failed', {
-            nzDuration: 0,
-          })
         }
-        try {
-          await updateFileContent({
-            message: 'import tag',
-            content: JSON.stringify(data.tag),
-            path: TAG_PATH,
-            refresh: false,
-          })
-          that.notification.success('OK', 'tag import successful')
-        } catch {
-          that.notification.error('Error', 'tag import failed', {
-            nzDuration: 0,
-          })
-        }
-        try {
-          await updateFileContent({
-            message: 'import search',
-            content: JSON.stringify({
-              ...search(),
-              ...data.search,
-            }),
-            path: SEARCH_PATH,
-            refresh: false,
-          })
-          that.notification.success('OK', 'search import successful')
-        } catch {
-          that.notification.error('Error', 'search import failed', {
-            nzDuration: 0,
-          })
-        }
-        try {
-          await updateFileContent({
-            message: 'import component',
-            content: JSON.stringify({
-              ...component,
-              ...data.component,
-            }),
-            path: COMPONENT_PATH,
-            refresh: false,
-          })
-          that.notification.success('OK', 'component import successful')
-        } catch {
-          that.notification.error('Error', 'component import failed', {
-            nzDuration: 0,
-          })
-        }
-
-        if (isSelfDevelop) {
-          setTimeout(() => {
-            location.reload()
-          }, 2000)
-        } else {
-          that.message.success($t('_syncSuccessTip'))
-        }
+        that.message.success($t('_syncSuccessTip'))
       } catch (error: any) {
         that.notification.error($t('_error'), error.message)
       } finally {
@@ -367,262 +440,13 @@ export default class WebpComponent {
     }
   }
 
-  goBack() {
-    history.go(-1)
-  }
-
-  openMoveWebModal(data: any, level?: number) {
-    event.emit('MOVE_WEB', {
-      id: data.id,
-      data: [data],
-      level,
-    })
-  }
-
-  openCreateWebModal(): any {
-    if (this.tabActive === 3 && this.threeSelect === -1) {
-      return this.message.error($t('_sel3'))
-    }
-    event.emit('CREATE_WEB', {
-      parentId: this.threeSelect,
-    })
-  }
-
-  openEditWebModal(detail: IWebProps) {
-    event.emit('CREATE_WEB', {
-      detail,
-    })
-  }
-
-  onTabChange(index?: number) {
-    this.errorWebs = []
-    this.tabActive = index ?? this.tabActive
-    this.setOfCheckedId.clear()
-    this.checkedAll = false
-  }
-
-  // 上移一级
-  moveOneUp(index: number): void {
-    if (index === 0) {
-      return
-    }
-    const current = this.navs()[index]
-    const prevData = this.navs()[index - 1]
-    this.navs.update((prev) => {
-      prev[index - 1] = current
-      prev[index] = prevData
-      setNavs(prev)
-      return prev
-    })
-  }
-
-  // 下移一级
-  moveOneDown(index: number): void {
-    if (index === this.navs.length - 1) {
-      return
-    }
-    const current = this.navs()[index]
-    const next = this.navs()[index + 1]
-    this.navs.update((prev) => {
-      prev[index + 1] = current
-      prev[index] = next
-      setNavs(prev)
-      return prev
-    })
-  }
-
-  // 上移二级
-  moveTwoUp(index: number): void {
-    try {
-      if (index === 0) {
-        return
-      }
-      const current = this.navs()[this.oneIndex].nav[index]
-      const prevData = this.navs()[this.oneIndex].nav[index - 1]
-      this.navs.update((prev) => {
-        prev[this.oneIndex].nav[index - 1] = current
-        prev[this.oneIndex].nav[index] = prevData
-        setNavs(prev)
-        return prev
-      })
-    } catch (error: any) {
-      this.notification.error($t('_error'), error.message)
-    }
-  }
-
-  // 下移二级
-  moveTwoDown(index: number): void {
-    try {
-      if (index === this.navs()[this.oneIndex].nav.length - 1) {
-        return
-      }
-      const current = this.navs()[this.oneIndex].nav[index]
-      const next = this.navs()[this.oneIndex].nav[index + 1]
-      this.navs.update((prev) => {
-        prev[this.oneIndex].nav[index + 1] = current
-        prev[this.oneIndex].nav[index] = next
-        setNavs(prev)
-        return prev
-      })
-    } catch (error: any) {
-      this.notification.error($t('_error'), error.message)
-    }
-  }
-
-  // 上移三级
-  moveThreeUp(index: number): void {
-    try {
-      if (index === 0) {
-        return
-      }
-      const current = this.navs()[this.oneIndex].nav[this.twoIndex].nav[index]
-      const prevData =
-        this.navs()[this.oneIndex].nav[this.twoIndex].nav[index - 1]
-
-      this.navs.update((prev) => {
-        prev[this.oneIndex].nav[this.twoIndex].nav[index - 1] = current
-        prev[this.oneIndex].nav[this.twoIndex].nav[index] = prevData
-        setNavs(prev)
-        return prev
-      })
-    } catch (error: any) {
-      this.notification.error($t('_error'), error.message)
-    }
-  }
-
-  // 下移三级
-  moveThreeDown(index: number): void {
-    try {
-      if (
-        index ===
-        this.navs()[this.oneIndex].nav[this.twoIndex].nav.length - 1
-      ) {
-        return
-      }
-      const current = this.navs()[this.oneIndex].nav[this.twoIndex].nav[index]
-      const next = this.navs()[this.oneIndex].nav[this.twoIndex].nav[index + 1]
-
-      this.navs.update((prev) => {
-        prev[this.oneIndex].nav[this.twoIndex].nav[index + 1] = current
-        prev[this.oneIndex].nav[this.twoIndex].nav[index] = next
-        setNavs(prev)
-        return prev
-      })
-    } catch (error: any) {
-      this.notification.error($t('_error'), error.message)
-    }
-  }
-
-  // 上移网站
-  moveWebUp(index: number): void {
-    try {
-      if (index === 0) {
-        return
-      }
-      const current =
-        this.navs()[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav[
-          index
-        ]
-      const prevData =
-        this.navs()[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav[
-          index - 1
-        ]
-      this.navs.update((prev) => {
-        prev[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav[
-          index - 1
-        ] = current
-        prev[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav[index] =
-          prevData
-        setNavs(prev)
-        return prev
-      })
-    } catch (error: any) {
-      this.notification.error($t('_error'), error.message)
-    }
-  }
-
-  // 下移网站
-  moveWebDown(index: number): void {
-    try {
-      if (
-        index ===
-        this.navs()[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav
-          .length -
-          1
-      ) {
-        return
-      }
-      const current =
-        this.navs()[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav[
-          index
-        ]
-      const next =
-        this.navs()[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav[
-          index + 1
-        ]
-      this.navs.update((prev) => {
-        prev[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav[
-          index + 1
-        ] = current
-        prev[this.oneIndex].nav[this.twoIndex].nav[this.threeIndex].nav[index] =
-          next
-        setNavs(prev)
-        return prev
-      })
-    } catch (error: any) {
-      this.notification.error($t('_error'), error.message)
-    }
-  }
-
-  hanldeOneSelect(id: number) {
-    this.oneSelect = id
-    this.twoSelect = -1
-    this.threeSelect = -1
-    this.onTabChange()
-  }
-
-  hanldeTwoSelect(id: number) {
-    this.twoSelect = id
-    this.threeSelect = -1
-    this.onTabChange()
-  }
-
-  hanldeThreeSelect(id: number) {
-    this.threeSelect = id
-    this.onTabChange()
-  }
-
-  openCreateClass(): any {
-    if (this.tabActive === 0) {
-      event.emit('EDIT_CLASS_OPEN')
-    }
-    // 检测是否有选择
-    if (this.tabActive === 1 && this.oneSelect === -1) {
-      return this.message.error($t('_sel1'))
-    }
-    if (this.tabActive === 2 && this.twoSelect === -1) {
-      return this.message.error($t('_sel2'))
-    }
-    const ids = [-1, this.oneSelect, this.twoSelect]
-    event.emit('EDIT_CLASS_OPEN', {
-      id: ids[this.tabActive],
-    })
-  }
-
-  openEditClass(data: any) {
-    event.emit('EDIT_CLASS_OPEN', {
-      ...data,
-    })
-  }
-
-  handleSync() {
+  async handleSync() {
     this.modal.info({
       nzTitle: $t('_syncDataOut'),
       nzOkText: $t('_confirmSync'),
       nzContent: $t('_confirmSyncTip'),
       nzOnOk: () => {
         this.syncLoading = true
-
         updateFileContent({
           message: 'update db',
           content: JSON.stringify(cleanWebAttrs(this.navs())),

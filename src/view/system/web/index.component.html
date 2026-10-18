@@ -1,478 +1,217 @@
-<div class="admin mt-2.5">
-  <button
-    *ngIf="!isSelfDevelop"
-    nz-button
-    nzType="primary"
-    (click)="handleSync()"
-    [nzLoading]="syncLoading"
-  >
-    {{ $t('_save') }}
-  </button>
-  <button
-    *ngIf="!isSelfDevelop"
-    nz-button
-    style="margin: 0 15px 20px 15px"
-    (click)="handleRestoreData()"
-  >
-    {{ $t('_resetInitData') }}
-  </button>
-  <button nz-button (click)="handleDownloadBackup()">
-    {{ $t('_backup') }}
-  </button>
+<div class="web-manager">
+  <!-- 左侧目录树 -->
+  <aside class="tree-panel">
+    <div class="tree-panel-title">目录</div>
 
-  <button
-    class="!ml-2.5"
-    nz-button
-    nz-tooltip
-    nzTooltipPlacement="bottom"
-    [nzTooltipTitle]="$t('_importBackupTip')"
-  >
-    {{ $t('_importBackup') }}
-    <input
-      type="file"
-      name="file2"
-      (change)="handleUploadBackup($event)"
-      accept=".json"
-      class="file-upload"
-    />
-  </button>
-
-  <div class="tip2">
-    {{ $t('_errCountTip', { count: settings.errorUrlCount || 0 }) }}
-  </div>
-
-  <nz-tabs
-    *ngIf="isLogin"
-    [nzSelectedIndex]="tabActive"
-    (nzSelectedIndexChange)="onTabChange($event)"
-  >
-    <nz-tab [nzTitle]="$t('_mgr1')">
-      <button nz-button nzType="primary" (click)="openCreateClass()">
-        {{ $t('_addTag') }}
-      </button>
-      <button
-        (click)="onBatchDelete()"
-        nz-button
-        nzDanger
-        style="margin-left: 10px"
-        [disabled]="setOfCheckedId.size <= 0"
+    <!-- 一级 -->
+    <div *ngFor="let one of navs()" class="tree-branch">
+      <div
+        class="tree-row"
+        [class.selected]="selOneId === one.id && selTwoId === -1"
+        [class.drag-over]="dropTargetId === one.id"
+        (click)="selectOne(one.id)"
+        (dragover)="onDragOverNode(one, 0, $event)"
+        (dragleave)="dropTargetId === one.id && (dropTargetId = -1)"
+        (drop)="onDropNode(one, $event)"
       >
-        {{ $t('_batchDel') }}
-      </button>
+        <span
+          class="chevron"
+          [class.open]="expanded.has(one.id)"
+          (click)="toggleExpand(one.id, $event)"
+          *ngIf="one.nav?.length"
+        >
+          <i nz-icon nzType="right" nzTheme="outline"></i>
+        </span>
+        <span class="chevron placeholder" *ngIf="!one.nav?.length"></span>
+        <span class="row-icon">📁</span>
+        <span class="row-title">{{ one.title }}</span>
+        <span class="row-count">{{ one.nav?.length || 0 }}</span>
+      </div>
 
-      <nz-table
-        #rowSelectionTable
-        #basicTable
-        [nzData]="navs()"
-        [nzShowPagination]="false"
-        style="margin-top: 15px"
-      >
-        <thead>
-          <tr>
-            <th
-              class="min-w-[100px]"
-              [nzChecked]="checkedAll"
-              (nzCheckedChange)="onCheckAll($event)"
+      <!-- 二级 -->
+      <div *ngIf="expanded.has(one.id)" class="tree-children">
+        <div *ngFor="let two of one.nav" class="tree-branch">
+          <div
+            class="tree-row"
+            [class.selected]="selTwoId === two.id && selThreeId === -1"
+            [class.drag-over]="dropTargetId === two.id"
+            (click)="selectTwo(two.id)"
+            (dragover)="onDragOverNode(two, 1, $event)"
+            (dragleave)="dropTargetId === two.id && (dropTargetId = -1)"
+            (drop)="onDropNode(two, $event)"
+          >
+            <span
+              class="chevron"
+              [class.open]="expanded.has(two.id)"
+              (click)="toggleExpand(two.id, $event)"
+              *ngIf="two.nav?.length"
             >
-              ({{ setOfCheckedId.size }})
-            </th>
-            <th class="min-w-[200px]">{{ $t('_action') }}</th>
-            <th class="min-w-[100px]">{{ $t('_icon') }}</th>
-            <th class="min-w-[200px]">{{ $t('_tagName') }}</th>
-            <th class="min-w-[100px]">{{ $t('_onlyOwnVisible') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let data of navs(); let idx = index">
-            <td
-              [nzChecked]="setOfCheckedId.has(data.id)"
-              (nzCheckedChange)="onItemChecked(data.id, $event)"
-            ></td>
-            <td class="select-none">
-              <a (click)="moveOneUp(idx)" [class.invisible]="idx === 0">{{
-                $t('_moveUp')
-              }}</a>
-              <a (click)="moveOneDown(idx)" class="ml-2.5">{{
-                $t('_moveDown')
-              }}</a>
-              <a (click)="openEditClass(data)" class="ml-2.5">{{
-                $t('_edit')
-              }}</a>
-            </td>
-            <td>
-              <app-logo [src]="data.icon" [name]="data.title" />
-            </td>
-            <td>{{ data.title }}</td>
-            <td>
-              <i
-                *ngIf="data.ownVisible"
-                nz-icon
-                nzType="check"
-                nzTheme="outline"
-              ></i>
-            </td>
-          </tr>
-        </tbody>
-      </nz-table>
-    </nz-tab>
+              <i nz-icon nzType="right" nzTheme="outline"></i>
+            </span>
+            <span class="chevron placeholder" *ngIf="!two.nav?.length"></span>
+            <span class="row-icon">📂</span>
+            <span class="row-title">{{ two.title }}</span>
+            <span class="row-count">{{ two.nav?.length || 0 }}</span>
+          </div>
 
-    <nz-tab [nzTitle]="$t('_mgr2')">
-      <nz-select
-        [ngModel]="oneSelect"
-        nzShowSearch
-        [nzPlaceHolder]="$t('_sel1')"
-        (ngModelChange)="hanldeOneSelect($event)"
-        class="w-full !mb-2.5 md:w-[260px] md:!mb-0"
-      >
-        <nz-option
-          *ngFor="let item of navs()"
-          [nzLabel]="item.title"
-          [nzValue]="item.id"
-        >
-        </nz-option>
-      </nz-select>
-
-      <button
-        nz-button
-        nzType="primary"
-        (click)="openCreateClass()"
-        class="md:!ml-2.5"
-      >
-        {{ $t('_addTag') }}
-      </button>
-      <button
-        (click)="onBatchDelete()"
-        nz-button
-        nzDanger
-        class="!ml-2.5"
-        [disabled]="setOfCheckedId.size <= 0"
-      >
-        {{ $t('_batchDel') }}
-      </button>
-
-      <nz-table
-        #rowSelectionTable
-        #basicTable
-        [nzData]="twoTableData"
-        [nzShowPagination]="false"
-        style="margin-top: 15px"
-      >
-        <thead>
-          <tr>
-            <th
-              class="min-w-[100px]"
-              [nzChecked]="checkedAll"
-              (nzCheckedChange)="onCheckAll($event)"
+          <!-- 三级 -->
+          <div *ngIf="expanded.has(two.id)" class="tree-children">
+            <div
+              class="tree-row"
+              *ngFor="let three of two.nav"
+              [class.selected]="selThreeId === three.id"
+              [class.drag-over]="dropTargetId === three.id"
+              (click)="selectThree(three.id)"
+              (dragover)="onDragOverNode(three, 2, $event)"
+              (dragleave)="dropTargetId === three.id && (dropTargetId = -1)"
+              (drop)="onDropNode(three, $event)"
             >
-              ({{ setOfCheckedId.size }})
-            </th>
-            <th class="min-w-[200px]">{{ $t('_action') }}</th>
-            <th class="min-w-[100px]">{{ $t('_icon') }}</th>
-            <th class="min-w-[200px]">{{ $t('_tagName') }}</th>
-            <th class="min-w-[100px]">{{ $t('_onlyOwnVisible') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let data of twoTableData; let idx = index">
-            <td
-              [nzChecked]="setOfCheckedId.has(data.id)"
-              (nzCheckedChange)="onItemChecked(data.id, $event)"
-            ></td>
-            <td class="select-none">
-              <a (click)="moveTwoUp(idx)" [class.invisible]="idx === 0">{{
-                $t('_moveUp')
-              }}</a>
-              <a (click)="moveTwoDown(idx)" class="ml-2.5">{{
-                $t('_moveDown')
-              }}</a>
-              <a (click)="openEditClass(data)" class="ml-2.5">{{
-                $t('_edit')
-              }}</a>
-              <a (click)="openMoveWebModal(data, 2)" class="ml-2.5">{{
-                $t('_move')
-              }}</a>
-            </td>
-            <td>
-              <app-logo [src]="data.icon" [name]="data.title" />
-            </td>
-            <td>{{ data.title }}</td>
-            <td>
-              <i
-                *ngIf="data.ownVisible"
-                nz-icon
-                nzType="check"
-                nzTheme="outline"
-              ></i>
-            </td>
-          </tr>
-        </tbody>
-      </nz-table>
-    </nz-tab>
+              <span class="chevron placeholder"></span>
+              <span class="row-icon">🗂</span>
+              <span class="row-title">{{ three.title }}</span>
+              <span class="row-count">{{ three.nav?.length || 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
 
-    <nz-tab [nzTitle]="$t('_mgr3')">
-      <nz-select
-        [ngModel]="oneSelect"
-        nzShowSearch
-        [nzPlaceHolder]="$t('_sel1')"
-        (ngModelChange)="hanldeOneSelect($event)"
-        class="w-full md:w-[260px]"
-      >
-        <nz-option
-          *ngFor="let item of navs()"
-          [nzLabel]="item.title"
-          [nzValue]="item.id"
+  <!-- 右侧内容 -->
+  <section
+    class="list-panel"
+    (dragover)="onDragOverPanel($event)"
+    (drop)="onDropPanel($event)"
+  >
+    <header
+      class="list-header"
+      [class.drag-over-panel]="dropTargetId === -2"
+    >
+      <div class="list-header-left">
+        <h3>{{ rightTitle }}</h3>
+        <span class="list-count">{{ rightList.length }} 项</span>
+      </div>
+      <div class="list-header-actions">
+        <label class="check-all" *ngIf="rightList.length">
+          <input
+            type="checkbox"
+            [checked]="allChecked"
+            (change)="toggleAll($event)"
+          />
+          全选
+        </label>
+        <button
+          nz-button
+          nzDanger
+          nzSize="small"
+          [disabled]="!checked.size"
+          (click)="onBatchDelete()"
         >
-        </nz-option>
-      </nz-select>
+          删除选中 ({{ checked.size }})
+        </button>
+        <button nz-button nzType="primary" nzSize="small" (click)="openCreate()">
+          {{ rightKind === 'web' ? '添加网址' : '添加分类' }}
+        </button>
+      </div>
+    </header>
 
-      <nz-select
-        [ngModel]="twoSelect"
-        nzShowSearch
-        [nzPlaceHolder]="$t('_sel2')"
-        (ngModelChange)="hanldeTwoSelect($event)"
-        class="w-full md:w-[260px] !mb-2.5 !mt-2.5 md:!ml-2.5 md:!mt-0 md:!mb-0"
-      >
-        <nz-option
-          *ngFor="let item of twoTableData"
-          [nzLabel]="item.title"
-          [nzValue]="item.id"
+    <div class="list-tip" *ngIf="dragKind && dragKind !== 'one'">
+      松开鼠标放入当前目录「{{ rightTitle }}」，或拖到左侧目录上放入对应分类
+    </div>
+
+    <div class="list-body">
+      <!-- 一级 / 二级 / 三级：显示分类行 -->
+      <ng-container *ngIf="rightKind !== 'web'">
+        <div
+          class="list-row"
+          *ngFor="let item of rightList"
+          draggable="true"
+          [class.dragging]="dragIds.includes(item.id)"
+          [class.drag-over]="dropTargetId === item.id"
+          (dragstart)="onDragStartRow(item, $event)"
+          (dragend)="onDragEnd()"
+          (dragover)="onDragOverRow(item, $event)"
+          (drop)="onDropRow(item, $event)"
         >
-        </nz-option>
-      </nz-select>
-
-      <button
-        nz-button
-        nzType="primary"
-        (click)="openCreateClass()"
-        class="md:!ml-2.5"
-      >
-        {{ $t('_addTag') }}
-      </button>
-      <button
-        (click)="onBatchDelete()"
-        nz-button
-        nzDanger
-        class="!ml-2.5"
-        [disabled]="setOfCheckedId.size <= 0"
-      >
-        {{ $t('_batchDel') }}
-      </button>
-
-      <nz-table
-        #rowSelectionTable
-        #basicTable
-        [nzData]="threeTableData"
-        [nzShowPagination]="false"
-        style="margin-top: 15px"
-      >
-        <thead>
-          <tr>
-            <th
-              class="min-w-[100px]"
-              [nzChecked]="checkedAll"
-              (nzCheckedChange)="onCheckAll($event)"
+          <input
+            type="checkbox"
+            [checked]="checked.has(item.id)"
+            (change)="toggleCheck(item.id, $event)"
+            (click)="$event.stopPropagation()"
+          />
+          <span class="row-icon">📁</span>
+          <span class="row-title">{{ item.title }}</span>
+          <span class="row-count">{{ item.nav?.length || 0 }} 项</span>
+          <span class="row-actions">
+            <button nz-button nzSize="small" (click)="openEdit(item); $event.stopPropagation()">编辑</button>
+            <button
+              nz-button
+              nzDanger
+              nzSize="small"
+              (click)="delItems([item.id], true); $event.stopPropagation()"
             >
-              ({{ setOfCheckedId.size }})
-            </th>
-            <th class="min-w-[200px]">{{ $t('_action') }}</th>
-            <th class="min-w-[100px]">{{ $t('_icon') }}</th>
-            <th class="min-w-[200px]">{{ $t('_tagName') }}</th>
-            <th class="min-w-[100px]">{{ $t('_onlyOwnVisible') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let data of threeTableData; let idx = index">
-            <td
-              [nzChecked]="setOfCheckedId.has(data.id)"
-              (nzCheckedChange)="onItemChecked(data.id, $event)"
-            ></td>
-            <td class="select-none">
-              <a (click)="moveThreeUp(idx)" [class.invisible]="idx === 0">{{
-                $t('_moveUp')
-              }}</a>
-              <a (click)="moveThreeDown(idx)" class="ml-2.5">{{
-                $t('_moveDown')
-              }}</a>
-              <a (click)="openEditClass(data)" class="ml-2.5">{{
-                $t('_edit')
-              }}</a>
-              <a (click)="openMoveWebModal(data, 3)" class="ml-2.5">{{
-                $t('_move')
-              }}</a>
-            </td>
-            <td>
-              <app-logo [src]="data.icon" [name]="data.title" />
-            </td>
-            <td>{{ data.title }}</td>
-            <td>
-              <i
-                *ngIf="data.ownVisible"
-                nz-icon
-                nzType="check"
-                nzTheme="outline"
-              ></i>
-            </td>
-          </tr>
-        </tbody>
-      </nz-table>
-    </nz-tab>
+              删除
+            </button>
+          </span>
+        </div>
+      </ng-container>
 
-    <nz-tab [nzTitle]="$t('_mgrWeb') + '(' + internal.loginViewCount + ')'">
-      <nz-select
-        [ngModel]="oneSelect"
-        nzShowSearch
-        [nzPlaceHolder]="$t('_sel1')"
-        (ngModelChange)="hanldeOneSelect($event)"
-        class="w-full !mb-2.5 md:w-[150px] md:!mb-0"
-      >
-        <nz-option
-          *ngFor="let item of navs()"
-          [nzLabel]="item.title"
-          [nzValue]="item.id"
+      <!-- 三级目录下：显示网址行 -->
+      <ng-container *ngIf="rightKind === 'web'">
+        <div
+          class="list-row"
+          *ngFor="let web of rightList"
+          draggable="true"
+          [class.dragging]="dragIds.includes(web.id)"
+          [class.drag-over]="dropTargetId === web.id"
+          (dragstart)="onDragStartRow(web, $event)"
+          (dragend)="onDragEnd()"
+          (dragover)="onDragOverRow(web, $event)"
+          (drop)="onDropRow(web, $event)"
         >
-        </nz-option>
-      </nz-select>
-
-      <nz-select
-        [ngModel]="twoSelect"
-        nzShowSearch
-        [nzPlaceHolder]="$t('_sel2')"
-        (ngModelChange)="hanldeTwoSelect($event)"
-        class="w-full !mb-2.5 md:w-[150px] md:!mb-0 md:!ml-2.5"
-      >
-        <nz-option
-          *ngFor="let item of twoTableData"
-          [nzLabel]="item.title"
-          [nzValue]="item.id"
-        >
-        </nz-option>
-      </nz-select>
-
-      <nz-select
-        [ngModel]="threeSelect"
-        nzShowSearch
-        [nzPlaceHolder]="$t('_sel3')"
-        (ngModelChange)="hanldeThreeSelect($event)"
-        class="w-full !mb-2.5 md:w-[150px] md:!mb-0 md:!ml-2.5"
-      >
-        <nz-option
-          *ngFor="let item of threeTableData"
-          [nzLabel]="item.title"
-          [nzValue]="item.id"
-        >
-        </nz-option>
-      </nz-select>
-
-      <button
-        nz-button
-        nzType="primary"
-        (click)="openCreateWebModal()"
-        class="md:!ml-2.5"
-      >
-        {{ $t('_addWeb') }}({{ websiteTableData.length }})
-      </button>
-      <button
-        (click)="onBatchDelete()"
-        nz-button
-        nzDanger
-        [disabled]="setOfCheckedId.size <= 0"
-        class="!ml-2.5"
-      >
-        {{ $t('_batchDel') }}
-      </button>
-      <button
-        class="!ml-2.5"
-        nz-button
-        nzType="primary"
-        nzDanger
-        (click)="getErrorWebs()"
-      >
-        {{ $t('_getErrorWeb') }}
-      </button>
-
-      <nz-table
-        #rowSelectionTable
-        #basicTable
-        [nzData]="websiteTableData"
-        [nzShowPagination]="false"
-        style="margin-top: 15px"
-      >
-        <thead>
-          <tr>
-            <th
-              class="min-w-[70px]"
-              [nzChecked]="checkedAll"
-              (nzCheckedChange)="onCheckAll($event)"
+          <input
+            type="checkbox"
+            [checked]="checked.has(web.id)"
+            (change)="toggleCheck(web.id, $event)"
+            (click)="$event.stopPropagation()"
+          />
+          <app-logo [src]="web.icon" [name]="web.name" [size]="22" [radius]="4" />
+          <span class="row-title" [title]="web.desc">{{ web.name }}</span>
+          <span class="row-url">{{ web.url }}</span>
+          <span class="row-actions">
+            <button nz-button nzSize="small" (click)="openEdit(web); $event.stopPropagation()">编辑</button>
+            <button
+              nz-button
+              nzDanger
+              nzSize="small"
+              (click)="delItems([web.id], false); $event.stopPropagation()"
             >
-              ({{ setOfCheckedId.size }})
-            </th>
-            <th class="text-center min-w-[60px]">{{ $t('_action') }}</th>
-            <th class="min-w-[70px]">{{ $t('_status') }}</th>
-            <th class="min-w-[80px]">{{ $t('_icon') }}</th>
-            <th class="min-w-[100px]">{{ $t('_webName') }}</th>
-            <th class="min-w-[100px]">{{ $t('_associatedLabels') }}</th>
-            <th class="min-w-[120px]">{{ $t('_onlyOwnVisible') }}</th>
-            <th class="min-w-[300px]">{{ $t('_webDesc') }}</th>
-            <th class="min-w-[300px]">{{ $t('_webTag') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let data of websiteTableData; let idx = index">
-            <td
-              [nzChecked]="setOfCheckedId.has(data.id)"
-              (nzCheckedChange)="onItemChecked(data.id, $event)"
-            ></td>
-            <td class="text-center select-none">
-              <div *ngIf="errorWebs.length <= 0">
-                <a (click)="moveWebUp(idx)" [class.invisible]="idx === 0">{{
-                  $t('_moveUp')
-                }}</a>
-              </div>
-              <div *ngIf="errorWebs.length <= 0">
-                <a (click)="moveWebDown(idx)">{{ $t('_moveDown') }}</a>
-              </div>
-              <a (click)="openEditWebModal(data)">{{ $t('_edit') }}</a>
-              <div *ngIf="errorWebs.length <= 0">
-                <a (click)="openMoveWebModal(data)">{{ $t('_move') }}</a>
-              </div>
-            </td>
-            <td>
-              <span
-                *ngIf="data.ok === false"
-                nz-icon
-                nzType="close"
-                nzTheme="outline"
-                style="color: red"
-              ></span>
-            </td>
-            <td>
-              <app-logo
-                *ngIf="data.icon"
-                [src]="data.icon"
-                [name]="data.name"
-              />
-            </td>
-            <td>
-              <a [href]="data.url" target="_blank">{{ data.name }}</a>
-            </td>
-            <td>
-              <tag-list [data]="data.tags" *ngIf="data.tags" />
-            </td>
-            <td>
-              <i
-                *ngIf="data.ownVisible"
-                nz-icon
-                nzType="check"
-                nzTheme="outline"
-              ></i>
-            </td>
-            <td>
-              <pre class="desc">{{ data.desc }}</pre>
-            </td>
-            <td>{{ data.breadcrumb }}</td>
-          </tr>
-        </tbody>
-      </nz-table>
-    </nz-tab>
-  </nz-tabs>
+              删除
+            </button>
+          </span>
+        </div>
+      </ng-container>
+
+      <div class="list-empty" *ngIf="!rightList.length">空目录，点右上角「添加」创建内容</div>
+    </div>
+
+    <footer class="list-footer">
+      <span class="tip">
+        拖拽行可排序；拖到左侧目录可移动；批量勾选后拖拽整体移动。改动后点「保 存」同步到线上。
+      </span>
+      <span class="footer-btns">
+        <button nz-button nzType="primary" nzSize="small" [nzLoading]="syncLoading" (click)="handleSync()">保 存</button>
+        <button nz-button nzSize="small" (click)="handleDownloadBackup()">备份</button>
+        <button nz-button nzSize="small" (click)="fileInput.click()">导入备份</button>
+        <input
+          #fileInput
+          type="file"
+          accept="application/json"
+          style="display: none"
+          (change)="handleUploadBackup($event)"
+        />
+        <button nz-button nzSize="small" nzDanger (click)="handleRestoreData()">恢复初始数据</button>
+      </span>
+    </footer>
+  </section>
 </div>

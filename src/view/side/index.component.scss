@@ -7,7 +7,7 @@
 
 .main {
   min-height: 100vh;
-  background-color: #f0f2f5;
+  background-color: #f7fafc;
   display: flex;
   .inner-layout {
     flex: 1;
@@ -28,20 +28,20 @@
     transition: 0.1s linear;
   }
 
-  // 一级分类大标题（参考爱达杂货铺风格，二级标签紧跟标题后面）
+  // 一级分类大标题（奶油风：白底 + 淡湖蓝点缀）
   .one-title {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 6px 12px;
     margin: 22px 0 12px;
-    padding: 8px 14px;
+    padding: 9px 14px;
     font-size: 18px;
     font-weight: 600;
-    color: #1f2329;
-    background: rgba(22, 119, 255, 0.08);
-    border-left: 4px solid #1677ff;
-    border-radius: 4px;
+    color: #33475b;
+    background: rgba(112, 190, 255, 0.1);
+    border-left: 4px solid #79c1fb;
+    border-radius: 10px;
 
     .one-title-text {
       display: inline-block;
@@ -67,15 +67,15 @@
     font-weight: 400;
     border-radius: 999px;
     cursor: pointer;
-    color: #555;
-    background: rgba(0, 0, 0, 0.06);
+    color: #5e7183;
+    background: rgba(121, 193, 251, 0.14);
     transition: all 0.15s;
     user-select: none;
     &:hover {
-      color: #1677ff;
+      color: #3aa0f8;
     }
     &.active {
-      background: #1677ff;
+      background: #6cb8f9;
       color: #fff;
       font-weight: 600;
     }

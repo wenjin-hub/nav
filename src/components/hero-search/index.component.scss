@@ -1,0 +1,151 @@
+.hero {
+  position: relative;
+  width: 100%;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // 底部渐变遮罩，让图片与页面奶油色背景自然衔接
+  .hero-mask {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(247, 250, 252, 0.1) 62%,
+      #f7fafc 100%
+    );
+    pointer-events: none;
+  }
+
+  &.no-img {
+    background: linear-gradient(135deg, #e9f5ff 0%, #f6fbff 55%, #f7fafc 100%);
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+    width: min(640px, 88%);
+    margin-top: -20px;
+  }
+
+  // 第一行：搜索类别
+  .hero-cats {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin-bottom: 14px;
+  }
+
+  .hero-cat {
+    padding: 4px 14px;
+    font-size: 15px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: #eaf6ff;
+    text-shadow: 0 1px 3px rgba(40, 90, 130, 0.45);
+    transition: all 0.15s;
+    user-select: none;
+    &:hover {
+      opacity: 0.85;
+    }
+    &.active {
+      background: rgba(255, 255, 255, 0.92);
+      color: #2f95f0;
+      font-weight: 600;
+      text-shadow: none;
+      box-shadow: 0 2px 8px rgba(60, 130, 190, 0.25);
+    }
+  }
+
+  .no-img .hero-cat {
+    color: #5e7183;
+    text-shadow: none;
+    background: rgba(255, 255, 255, 0.75);
+    &.active {
+      background: #fff;
+      color: #2f95f0;
+      box-shadow: 0 2px 8px rgba(60, 130, 190, 0.2);
+    }
+  }
+
+  // 第二行：搜索框
+  .hero-input-box {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 999px;
+    padding: 4px 6px 4px 20px;
+    box-shadow: 0 4px 18px rgba(80, 140, 200, 0.18);
+
+    input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      outline: none;
+      height: 38px;
+      font-size: 15px;
+      color: #33475b;
+      background: transparent;
+      &::placeholder {
+        color: #a8b6c4;
+      }
+    }
+
+    .hero-btn {
+      flex-shrink: 0;
+      padding: 8px 24px;
+      border-radius: 999px;
+      background: #6cb8f9;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+      &:hover {
+        background: #54aaf6;
+      }
+    }
+  }
+
+  // 第三行：搜索引擎
+  .hero-engines {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 14px;
+  }
+
+  .hero-engine {
+    padding: 3px 12px;
+    font-size: 13px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: #f2faff;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(4px);
+    transition: all 0.15s;
+    user-select: none;
+    &:hover {
+      background: rgba(255, 255, 255, 0.32);
+    }
+    &.active {
+      background: #fff;
+      color: #2f95f0;
+      font-weight: 600;
+    }
+  }
+
+  .no-img .hero-engine {
+    color: #5e7183;
+    background: rgba(255, 255, 255, 0.8);
+    &.active {
+      background: #fff;
+      color: #2f95f0;
+    }
+  }
+}

@@ -52,6 +52,21 @@ export default class SystemBookmarkComponent {
       '<TITLE>Bookmarks</TITLE>\n' +
       '<H1>Bookmarks</H1>\n<DL><p>\n'
 
+    // 折叠冗余层级：目录自身不含网址、且只有一个子目录时，用子目录代替它
+    // （避免导出后出现「1.综合导航 > 1.综合导航 > 1.综合导航」的嵌套）
+    const collapse = (node: any): any => {
+      let cur = node
+      while (
+        Array.isArray(cur?.nav) &&
+        cur.nav.length === 1 &&
+        !cur.nav[0]['url'] &&
+        Array.isArray(cur.nav[0]['nav'])
+      ) {
+        cur = cur.nav[0]
+      }
+      return cur
+    }
+
     const walk = (list: any[], depth: number) => {
       const pad = '    '.repeat(depth)
       for (const item of list) {
@@ -61,9 +76,10 @@ export default class SystemBookmarkComponent {
             Date.now() / 1000,
           )}">${esc(item['name'])}</A>\n`
         } else if (Array.isArray(item['nav'])) {
-          // 分类文件夹
-          html += `${pad}<DT><H3>${esc(item['title'])}</H3>\n${pad}<DL><p>\n`
-          walk(item['nav'], depth + 1)
+          // 分类文件夹（先折叠同名嵌套链）
+          const target = collapse(item)
+          html += `${pad}<DT><H3>${esc(target['title'])}</H3>\n${pad}<DL><p>\n`
+          walk(target['nav'], depth + 1)
           html += `${pad}</DL><p>\n`
         }
       }

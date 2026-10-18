@@ -14,6 +14,7 @@ import { NoDataComponent } from 'src/components/no-data/no-data.component'
 import { FooterComponent } from 'src/components/footer/footer.component'
 import { FixbarComponent } from 'src/components/fixbar/index.component'
 import { SwiperComponent } from 'src/components/swiper/index.component'
+import { HeroSearchComponent } from 'src/components/hero-search/index.component'
 import { ToolbarTitleWebComponent } from 'src/components/toolbar-title/index.component'
 import { WebListComponent } from 'src/components/web-list/index.component'
 import { ClassTabsComponent } from 'src/components/class-tabs/index.component'
@@ -44,6 +45,7 @@ import { debounceTime } from 'rxjs/operators'
     ClassTabsComponent,
     SidebarComponent,
     LogoComponent,
+    HeroSearchComponent,
     AccessLoginComponent,
   ],
   selector: 'app-side',

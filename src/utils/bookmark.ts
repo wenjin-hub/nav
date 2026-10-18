@@ -216,37 +216,51 @@ export function parseBookmark(
     throw error
   }
 
-  // 增量导入
+  // 增量导入：URL 全局去重（全树范围内已存在的网址一律跳过，
+  // 保留站内已设置的名称、描述等不被导入内容覆盖）
+  const normUrl = (u: unknown): string =>
+    removeTrailingSlashes(String(u || '').trim())
+  const existingUrls = new Set<string>()
+  const collectUrls = (list: any[]) => {
+    for (const item of list || []) {
+      if (item.url) {
+        existingUrls.add(normUrl(item.url))
+      } else if (Array.isArray(item.nav)) {
+        collectUrls(item.nav)
+      }
+    }
+  }
+  collectUrls(copyWebList)
+
   function r(data: any[], list: any[]) {
     for (let i = 0; i < data.length; i++) {
       const item = data[i] as any
       const title = (item.title || removeTrailingSlashes(item.url)).trim()
       const idx = list.findIndex(
-        (item) =>
-          (item.title || removeTrailingSlashes(item.url)).trim() === title,
+        (e) => (e.title || removeTrailingSlashes(e.url)).trim() === title,
       )
 
       if (idx !== -1) {
+        // 同名分类：递归合并子内容
         if (Array.isArray(item.nav)) {
           r(item.nav, list[idx].nav)
         }
-      } else {
-        const url = removeTrailingSlashes((item.url || '').trim())
-        if (item.url) {
-          const has = list.some(
-            (e) => removeTrailingSlashes(e.url).trim() === url,
-          )
-          if (!has) {
-            list.push(item)
-          }
+        continue
+      }
+
+      if (item.url) {
+        // 网站：全树 URL 已存在则跳过（保留原有名称/描述），否则新增
+        const url = normUrl(item.url)
+        if (!existingUrls.has(url)) {
+          list.push(item)
+          existingUrls.add(url)
         }
-        const title = (item.title || '').trim()
-        if (item.title) {
-          const has = list.some((e) => e.title?.trim() === title)
-          if (!has) {
-            list.push(item)
-          }
-        }
+        continue
+      }
+
+      if (item.title) {
+        // 新分类
+        list.push(item)
       }
     }
   }

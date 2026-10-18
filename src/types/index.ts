@@ -298,6 +298,9 @@ export interface ISettings {
   // 访问密码哈希（SHA-256，空字符串表示未启用）
   accessPwdHash?: string
 
+  // 首页搜索区配置：类别 + 每类别的搜索引擎（url 用 ${q} 占位关键词）
+  searchCategories?: { name: string; engines: { name: string; url: string }[] }[]
+
   spiderIcon: Spider
   spiderDescription: Spider
   spiderTitle: Spider

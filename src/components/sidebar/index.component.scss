@@ -133,18 +133,18 @@
       align-items: center;
       margin: 2px 8px;
       padding: 9px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      color: #333;
+      color: #47586b;
       transition: background 0.15s;
       &:hover {
-        background: rgba(0, 0, 0, 0.05);
+        background: rgba(121, 193, 251, 0.12);
       }
     }
 
     .spy-item.active .spy-row {
-      background: rgba(22, 119, 255, 0.1);
-      color: #1677ff;
+      background: rgba(121, 193, 251, 0.18);
+      color: #2f95f0;
       font-weight: 600;
     }
 
@@ -177,16 +177,16 @@
       display: flex;
       align-items: center;
       padding: 9px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      color: #333;
+      color: #47586b;
       font-size: 14px;
       &:hover {
-        background: rgba(0, 0, 0, 0.05);
+        background: rgba(121, 193, 251, 0.12);
       }
       &.active {
-        background: rgba(22, 119, 255, 0.1);
-        color: #1677ff;
+        background: rgba(121, 193, 251, 0.18);
+        color: #2f95f0;
         font-weight: 600;
       }
     }

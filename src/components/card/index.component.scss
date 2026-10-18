@@ -213,19 +213,19 @@
 ::ng-deep .column-border {
   .column2 {
     border: 1px solid transparent !important;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(120, 160, 200, 0.14);
+    border-radius: 10px;
   }
 }
 .column2 {
   background-color: #fff;
-  padding: 8px;
-  border-bottom: 1px solid #eee;
+  padding: 10px 12px;
+  border-bottom: 1px solid transparent;
   transition: all 0.15s linear;
   color: #000;
   display: block;
   &:hover {
-    background-color: #f2f3f5;
+    background-color: #f3faff;
     .action-btn {
       display: block;
     }
@@ -235,16 +235,26 @@
     align-items: center;
   }
   .right-box {
+    // 描述区固定高度（两行），有无描述卡片高度都不变
     margin-top: 6px;
+    height: 40px;
+    overflow: hidden;
   }
   .title {
     font-weight: 500;
     margin-left: 8px;
-    font-size: 16px;
+    font-size: 15px;
   }
   .desc {
     margin: 0;
     font-size: 13px;
+    line-height: 20px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-all;
   }
   .bottom-bar {
     display: flex;
