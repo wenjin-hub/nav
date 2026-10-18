@@ -243,6 +243,12 @@
         display: inline-flex;
         gap: 8px;
       }
+
+      // 有未保存改动时保存按钮醒目提示
+      .dirty-btn {
+        box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.45);
+        font-weight: 600;
+      }
     }
   }
 }

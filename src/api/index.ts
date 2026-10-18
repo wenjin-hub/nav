@@ -338,13 +338,119 @@ export async function getWebInfo(url: string) {
         ...res.data,
       }
     }
-    const res = await httpNav.post('/api/icon', { url })
-    return {
-      ...res.data,
-    }
+    return await fetchWebMeta(url)
   } catch {
     return {}
   }
+}
+
+// ===== 新增网址时自动获取网站名称 / 描述 / 图标 =====
+// 旧实现走上游官方服务 api.nav3.cn（需授权码且国内不可达，永远超时报
+// ECONNABORTED）。改为通过公共 CORS 代理直接抓取目标网页 HTML，
+// 解析 <title> / meta description / favicon；全部失败时静默返回空对象，
+// 由用户手动填写，不弹任何错误提示。
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
+}
+
+function match1(re: RegExp, html: string): string | null {
+  const m = html.match(re)
+  return m ? decodeEntities(m[1]).trim() : null
+}
+
+async function fetchText(url: string, timeoutMs: number): Promise<string | null> {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, redirect: 'follow' })
+    if (!res.ok) return null
+    const text = await res.text()
+    return text || null
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function fetchWebMeta(rawUrl: string): Promise<Record<string, any>> {
+  let url = (rawUrl || '').trim()
+  if (!url) return {}
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url
+  let origin = ''
+  try {
+    origin = new URL(url).origin
+  } catch {
+    return {}
+  }
+
+  const proxies = [
+    (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    (u: string) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  ]
+
+  const results = await Promise.allSettled(
+    proxies.map(async (p) => {
+      const html = await fetchText(p(url), 8000)
+      if (!html) return null
+      const title =
+        match1(/<title[^>]*>([^<]*)<\/title>/i, html) ||
+        match1(
+          /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)/i,
+          html,
+        )
+      const desc =
+        match1(
+          /<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)/i,
+          html,
+        ) ||
+        match1(
+          /<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']/i,
+          html,
+        ) ||
+        match1(
+          /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)/i,
+          html,
+        )
+      if (!title && !desc) return null
+      let icon =
+        match1(
+          /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]+href=["']([^"']*)/i,
+          html,
+        ) ||
+        match1(
+          /<link[^>]+href=["']([^"']*)["'][^>]+rel=["'][^"']*icon[^"']*["']/i,
+          html,
+        ) ||
+        ''
+      if (icon) {
+        try {
+          icon = new URL(icon, url).href
+        } catch {
+          icon = ''
+        }
+      }
+      return {
+        title: title || '',
+        description: desc || '',
+        url: icon || origin + '/favicon.ico',
+      }
+    }),
+  )
+
+  for (const r of results) {
+    if (r.status === 'fulfilled' && r.value) return r.value
+  }
+  // 全部失败：静默返回空对象，保持手动填写
+  return {}
 }
 
 export function bookmarksExport(data: any) {

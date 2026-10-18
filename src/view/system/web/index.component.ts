@@ -3,7 +3,7 @@
 // See https://github.com/liuzi6612/nav
 // Edge 收藏夹风格重构：左侧目录树 + 右侧下一级内容，支持批量拖拽移动/删除、拖拽排序
 
-import { Component } from '@angular/core'
+import { Component, HostListener } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { FormsModule, ReactiveFormsModule } from '@angular/forms'
 import type { IWebProps } from 'src/types'
@@ -80,7 +80,10 @@ export default class WebpComponent {
     private modal: NzModalService,
     private notification: NzNotificationService,
     private message: NzMessageService,
-  ) {}
+  ) {
+    // 新增/编辑弹窗提交、删除等任何数据变更 → 标记待保存（远端需点「保 存」同步）
+    event.on('WEB_REFRESH', () => (this.dirty = true))
+  }
 
   // ===== 节点获取 =====
   get oneNode() {
@@ -301,13 +304,45 @@ export default class WebpComponent {
     e.preventDefault()
     e.stopPropagation()
     if (!this.dragIds.length) return
-    if (this.dragKind === 'one' || this.dropTargetId === item.id) {
-      this.moveBefore(item.id)
-    } else {
-      // 跨层级拖到行上时，尝试放入该行所在容器
-      const loc = this.locate(item.id)
-      if (loc) this.moveInto(loc.list)
+    const targetIsWeb = !!item.url
+    const dragIsWeb = this.dragKind === 'web'
+
+    // 目标行是文件夹（无论拖的是网址还是分类）→ 放入该文件夹
+    if (!targetIsWeb) {
+      // 同级文件夹行上排序：拖的项就在同一个列表里时按排序处理
+      const loc0 = this.locate(item.id)
+      if (
+        !dragIsWeb &&
+        loc0 &&
+        this.dragIds.every((id) => loc0.list.some((x) => x.id === id))
+      ) {
+        this.moveBefore(item.id)
+        return
+      }
+      const leaf = this.resolveLeaf(item)
+      if (leaf?.nav) {
+        this.moveInto(leaf.nav)
+        return
+      }
     }
+
+    // 目标行是网址：
+    if (dragIsWeb) {
+      const loc = this.locate(item.id)
+      if (!loc) return
+      // 同一列表内 → 排序到该行之前
+      if (this.dragIds.every((id) => loc.list.some((x) => x.id === id))) {
+        this.moveBefore(item.id)
+        return
+      }
+      // 跨列表 → 移动到该行所在容器
+      this.moveInto(loc.list)
+      return
+    }
+
+    // 分类拖到网址行上 → 放入该行所在容器
+    const loc = this.locate(item.id)
+    if (loc) this.moveInto(loc.list)
   }
 
   // ===== 移动实现 =====
@@ -332,6 +367,15 @@ export default class WebpComponent {
     return node.nav.some((c: any) => !c.url && this.hasRef(c, ref))
   }
 
+  // ===== 未保存改动标记（批量管理：所有改动先留在本页，最后统一点「保 存」） =====
+  dirty = false
+
+  // 纯内存修改 + 廉价刷新信号（不写 localforage，避免每次拖拽全量序列化卡顿）
+  touch() {
+    this.dirty = true
+    this.navs.update((v: any[]) => [...v])
+  }
+
   moveInto(targetNav: any[]) {
     let moved = 0
     for (const id of this.dragIds) {
@@ -345,8 +389,10 @@ export default class WebpComponent {
       moved++
     }
     if (moved) {
-      setNavs(this.navs())
-      this.message.success(`已移动 ${moved} 项到「${this.dropTargetName(targetNav)}」，记得点「保 存」同步`)
+      this.touch()
+      this.message.success(
+        `已移动 ${moved} 项到「${this.dropTargetName(targetNav)}」，未保存，可继续操作`,
+      )
     }
     this.onDragEnd()
     this.checked.clear()
@@ -381,15 +427,22 @@ export default class WebpComponent {
     }
     if (items.length) {
       list.splice(tIndex, 0, ...items)
-      setNavs(this.navs())
-      this.message.success('排序已更新，记得点「保 存」同步')
+      this.touch()
+      this.message.success('排序已更新，未保存，可继续操作')
     }
     this.onDragEnd()
   }
 
   // ===== 新增 / 编辑 / 删除 =====
+  // 当前面板是否按「网址容器」对待（穿透包裹层 / 三级 / 已含网址的目录）
+  get isWebPanel(): boolean {
+    if (this.rightKind === 'web') return true
+    // 目录里已经混有网址 → 也按网址容器处理
+    return this.rightList.some((i: any) => i.url)
+  }
+
   openCreate() {
-    if (this.rightKind === 'web') {
+    if (this.isWebPanel) {
       event.emit('CREATE_WEB', { parentId: this.currentLeafId })
       return
     }
@@ -421,8 +474,21 @@ export default class WebpComponent {
     event.emit('DELETE_MODAL', {
       ids,
       isClass,
-      onComplete: () => this.cleanSelection(),
+      onComplete: () => {
+        // 删除会写入本机缓存，但远端要等「保 存」
+        this.dirty = true
+        this.cleanSelection()
+      },
     })
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(e: BeforeUnloadEvent) {
+    // 有未保存改动时拦截页面关闭/刷新
+    if (this.dirty) {
+      e.preventDefault()
+      e.returnValue = ''
+    }
   }
 
   onBatchDelete() {
@@ -515,19 +581,36 @@ export default class WebpComponent {
   }
 
   async handleSync() {
+    if (!this.dirty) {
+      this.message.info('当前没有未保存的改动')
+      return
+    }
     this.modal.info({
       nzTitle: $t('_syncDataOut'),
       nzOkText: $t('_confirmSync'),
       nzContent: $t('_confirmSyncTip'),
       nzOnOk: () => {
         this.syncLoading = true
-        updateFileContent({
-          message: 'update db',
-          content: JSON.stringify(cleanWebAttrs(this.navs())),
-          path: DB_PATH,
-        })
+        // 1) 写本机缓存（前端页面/刷新后立即可见）
+        setNavs(this.navs())
+          .catch(() => {})
+          .then(() =>
+            // 2) 同步远端仓库（Cloudflare 重建后全设备生效）
+            updateFileContent({
+              message: 'update db',
+              content: JSON.stringify(cleanWebAttrs(this.navs())),
+              path: DB_PATH,
+            }),
+          )
           .then(() => {
+            this.dirty = false
             this.message.success($t('_syncSuccessTip'))
+          })
+          .catch((e: any) => {
+            this.notification.error(
+              $t('_error'),
+              e?.message || '同步失败，请检查网络后重试',
+            )
           })
           .finally(() => {
             this.syncLoading = false

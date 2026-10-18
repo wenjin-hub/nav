@@ -116,7 +116,7 @@
           删除选中 ({{ checked.size }})
         </button>
         <button nz-button nzType="primary" nzSize="small" (click)="openCreate()">
-          {{ rightKind === 'web' ? '添加网址' : '添加分类' }}
+          {{ isWebPanel ? '添加网址' : '添加分类' }}
         </button>
       </div>
     </header>
@@ -126,11 +126,12 @@
     </div>
 
     <div class="list-body">
-      <!-- 一级 / 二级 / 三级：显示分类行 -->
-      <ng-container *ngIf="rightKind !== 'web'">
+      <!-- 按条目类型逐行渲染：有 url 的渲染为网址行，否则渲染为文件夹行（支持混合目录） -->
+      <ng-container *ngFor="let item of rightList">
+        <!-- 文件夹行 -->
         <div
           class="list-row"
-          *ngFor="let item of rightList"
+          *ngIf="!item.url; else webRowTpl"
           draggable="true"
           [class.dragging]="dragIds.includes(item.id)"
           [class.drag-over]="dropTargetId === item.id"
@@ -147,7 +148,7 @@
           />
           <span class="row-icon">📁</span>
           <span class="row-title">{{ item.title }}</span>
-          <span class="row-count">{{ item.nav?.length || 0 }} 项</span>
+          <span class="row-url">{{ nodeCount(item) }} 项</span>
           <span class="row-actions">
             <button nz-button nzSize="small" (click)="openEdit(item); $event.stopPropagation()">编辑</button>
             <button
@@ -160,42 +161,41 @@
             </button>
           </span>
         </div>
-      </ng-container>
 
-      <!-- 三级目录下：显示网址行 -->
-      <ng-container *ngIf="rightKind === 'web'">
-        <div
-          class="list-row"
-          *ngFor="let web of rightList"
-          draggable="true"
-          [class.dragging]="dragIds.includes(web.id)"
-          [class.drag-over]="dropTargetId === web.id"
-          (dragstart)="onDragStartRow(web, $event)"
-          (dragend)="onDragEnd()"
-          (dragover)="onDragOverRow(web, $event)"
-          (drop)="onDropRow(web, $event)"
-        >
-          <input
-            type="checkbox"
-            [checked]="checked.has(web.id)"
-            (change)="toggleCheck(web.id, $event)"
-            (click)="$event.stopPropagation()"
-          />
-          <app-logo [src]="web.icon" [name]="web.name" [size]="22" [radius]="4" />
-          <span class="row-title" [title]="web.desc">{{ web.name }}</span>
-          <span class="row-url">{{ web.url }}</span>
-          <span class="row-actions">
-            <button nz-button nzSize="small" (click)="openEdit(web); $event.stopPropagation()">编辑</button>
-            <button
-              nz-button
-              nzDanger
-              nzSize="small"
-              (click)="delItems([web.id], false); $event.stopPropagation()"
-            >
-              删除
-            </button>
-          </span>
-        </div>
+        <!-- 网址行 -->
+        <ng-template #webRowTpl>
+          <div
+            class="list-row"
+            draggable="true"
+            [class.dragging]="dragIds.includes(item.id)"
+            [class.drag-over]="dropTargetId === item.id"
+            (dragstart)="onDragStartRow(item, $event)"
+            (dragend)="onDragEnd()"
+            (dragover)="onDragOverRow(item, $event)"
+            (drop)="onDropRow(item, $event)"
+          >
+            <input
+              type="checkbox"
+              [checked]="checked.has(item.id)"
+              (change)="toggleCheck(item.id, $event)"
+              (click)="$event.stopPropagation()"
+            />
+            <app-logo [src]="item.icon" [name]="item.name" [size]="22" [radius]="4" />
+            <span class="row-title" [title]="item.desc">{{ item.name }}</span>
+            <span class="row-url">{{ item.url }}</span>
+            <span class="row-actions">
+              <button nz-button nzSize="small" (click)="openEdit(item); $event.stopPropagation()">编辑</button>
+              <button
+                nz-button
+                nzDanger
+                nzSize="small"
+                (click)="delItems([item.id], false); $event.stopPropagation()"
+              >
+                删除
+              </button>
+            </span>
+          </div>
+        </ng-template>
       </ng-container>
 
       <div class="list-empty" *ngIf="!rightList.length">空目录，点右上角「添加」创建内容</div>
@@ -203,10 +203,19 @@
 
     <footer class="list-footer">
       <span class="tip">
-        拖拽行可排序；拖到左侧目录可移动；批量勾选后拖拽整体移动。改动后点「保 存」同步到线上。
+        改动仅保存在当前页面：拖拽排序 / 拖到左侧目录或文件夹行移动 / 批量勾选拖拽，可连续批量操作，最后点「保 存」一次性写入本机并同步到线上。
       </span>
       <span class="footer-btns">
-        <button nz-button nzType="primary" nzSize="small" [nzLoading]="syncLoading" (click)="handleSync()">保 存</button>
+        <button
+          nz-button
+          nzType="primary"
+          nzSize="small"
+          [nzLoading]="syncLoading"
+          [class.dirty-btn]="dirty"
+          (click)="handleSync()"
+        >
+          保 存{{ dirty ? ' *' : '' }}
+        </button>
         <button nz-button nzSize="small" (click)="handleDownloadBackup()">备份</button>
         <button nz-button nzSize="small" (click)="fileInput.click()">导入备份</button>
         <input
