@@ -150,18 +150,11 @@
             *ngFor="let two of one.nav; trackBy: commonService.trackByItem"
           >
             <div *ngIf="two.id === getActiveTwoId(one)">
-              <div
-                *ngFor="let three of two.nav; trackBy: commonService.trackByItem"
+              <!-- 情况1：网址直接挂在二级分类下 -->
+              <ng-container
+                *ngIf="two.nav?.length && two.nav[0]['url']; else mThreeGroups"
               >
-                <!-- 二级下只有一个与二级同名的三级分组时，不重复显示标题 -->
-                <app-toolbar-title
-                  *ngIf="two.nav.length > 1 || three.title !== two.title"
-                  [dataSource]="three"
-                  (onCollapse)="onCollapseThree(three)"
-                />
-
                 <div
-                  [class.hidden]="three['collapsed']"
                   [ngClass]="{
                     'px-2 grid grid-cols-2 gap-x-3 gap-y-3 md:grid-cols-3 lg:grid-cols-4':
                       commonService.settings().appCardStyle !== 'icon',
@@ -171,15 +164,48 @@
                 >
                   <app-card
                     *ngFor="
-                      let el of three.nav;
+                      let el of two.nav;
                       trackBy: commonService.trackByItemWeb
                     "
                     [cardStyle]="commonService.settings().appCardStyle"
-                    [dataSource]="el"
+                    [dataSource]="$any(el)"
                     class="column-border"
                   ></app-card>
                 </div>
-              </div>
+              </ng-container>
+              <!-- 情况2：二级下是三级分组 -->
+              <ng-template #mThreeGroups>
+                <div
+                  *ngFor="let three of two.nav; trackBy: commonService.trackByItem"
+                >
+                  <!-- 二级下只有一个与二级同名的三级分组时，不重复显示标题 -->
+                  <app-toolbar-title
+                    *ngIf="two.nav.length > 1 || three.title !== two.title"
+                    [dataSource]="three"
+                    (onCollapse)="onCollapseThree(three)"
+                  />
+
+                  <div
+                    [class.hidden]="three['collapsed']"
+                    [ngClass]="{
+                      'px-2 grid grid-cols-2 gap-x-3 gap-y-3 md:grid-cols-3 lg:grid-cols-4':
+                        commonService.settings().appCardStyle !== 'icon',
+                      'px-2 flex flex-wrap gap-x-4 gap-y-4':
+                        commonService.settings().appCardStyle === 'icon',
+                    }"
+                  >
+                    <app-card
+                      *ngFor="
+                        let el of three.nav;
+                        trackBy: commonService.trackByItemWeb
+                      "
+                      [cardStyle]="commonService.settings().appCardStyle"
+                      [dataSource]="$any(el)"
+                      class="column-border"
+                    ></app-card>
+                  </div>
+                </div>
+              </ng-template>
 
               <app-no-data *ngIf="two.nav?.length === 0" />
             </div>

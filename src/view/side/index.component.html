@@ -131,44 +131,76 @@
                   *ngFor="let two of one.nav; trackBy: commonService.trackByItem"
                 >
                   <div *ngIf="two.id === getActiveTwoId(one)">
-                    <div
-                      *ngFor="
-                        let three of two.nav;
-                        trackBy: commonService.trackByItem
-                      "
-                      class="nav-wrapper"
+                    <!-- 情况1：网址直接挂在二级分类下 -->
+                    <ng-container
+                      *ngIf="two.nav?.length && two.nav[0]['url']; else threeGroups"
                     >
-                      <!-- 二级下只有一个与二级同名的三级分组时，不重复显示标题 -->
-                      <app-toolbar-title
-                        *ngIf="two.nav.length > 1 || three.title !== two.title"
-                        [dataSource]="three"
-                        (onCollapse)="onCollapseThree(three)"
-                      />
-
-                      <div
-                        [class.hidden]="three['collapsed']"
-                        [ngClass]="{
-                          'grid gap-x-4 gap-y-3 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5':
-                            commonService.settings().sideCardStyle !== 'icon',
-                          'flex flex-wrap gap-x-6 gap-y-4':
-                            commonService.settings().sideCardStyle === 'icon',
-                          '2xl:grid-cols-6':
-                            commonService.settings().sideCardStyle ===
-                              'original' ||
-                            commonService.settings().sideCardStyle === 'example',
-                        }"
-                      >
-                        <app-card
-                          *ngFor="
-                            let el of three.nav;
-                            trackBy: commonService.trackByItemWeb
-                          "
-                          [cardStyle]="commonService.settings().sideCardStyle"
-                          [dataSource]="el"
-                          class="column-border"
-                        />
+                      <div class="nav-wrapper">
+                        <div
+                          [ngClass]="{
+                            'grid gap-x-4 gap-y-3 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5':
+                              commonService.settings().sideCardStyle !== 'icon',
+                            'flex flex-wrap gap-x-6 gap-y-4':
+                              commonService.settings().sideCardStyle === 'icon',
+                            '2xl:grid-cols-6':
+                              commonService.settings().sideCardStyle ===
+                                'original' ||
+                              commonService.settings().sideCardStyle === 'example',
+                          }"
+                        >
+                          <app-card
+                            *ngFor="
+                              let el of two.nav;
+                              trackBy: commonService.trackByItemWeb
+                            "
+                            [cardStyle]="commonService.settings().sideCardStyle"
+                            [dataSource]="$any(el)"
+                            class="column-border"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    </ng-container>
+                    <!-- 情况2：二级下是三级分组 -->
+                    <ng-template #threeGroups>
+                      <div
+                        *ngFor="
+                          let three of two.nav;
+                          trackBy: commonService.trackByItem
+                        "
+                        class="nav-wrapper"
+                      >
+                        <!-- 二级下只有一个与二级同名的三级分组时，不重复显示标题 -->
+                        <app-toolbar-title
+                          *ngIf="two.nav.length > 1 || three.title !== two.title"
+                          [dataSource]="three"
+                          (onCollapse)="onCollapseThree(three)"
+                        />
+
+                        <div
+                          [class.hidden]="three['collapsed']"
+                          [ngClass]="{
+                            'grid gap-x-4 gap-y-3 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5':
+                              commonService.settings().sideCardStyle !== 'icon',
+                            'flex flex-wrap gap-x-6 gap-y-4':
+                              commonService.settings().sideCardStyle === 'icon',
+                            '2xl:grid-cols-6':
+                              commonService.settings().sideCardStyle ===
+                                'original' ||
+                              commonService.settings().sideCardStyle === 'example',
+                          }"
+                        >
+                          <app-card
+                            *ngFor="
+                              let el of three.nav;
+                              trackBy: commonService.trackByItemWeb
+                            "
+                            [cardStyle]="commonService.settings().sideCardStyle"
+                            [dataSource]="$any(el)"
+                            class="column-border"
+                          />
+                        </div>
+                      </div>
+                    </ng-template>
 
                     <!-- 分类下没有网址时：仅保留一行卡片高度的空白，不显示大提示框 -->
                     <div class="empty-block" *ngIf="two.nav?.length === 0"></div>

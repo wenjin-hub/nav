@@ -44,7 +44,8 @@ export const tagMap = computed<ITagProp>(() => {
 export const internal = signal<InternalProps>(internalJson)
 
 export const navs = signal<INavProps[]>(
-  isSelfDevelop ? [] : (dbJson as INavProps[]),
+  // db.json 里网址可挂在任意层级（如二级分类直接挂网址），类型层面放宽断言
+  isSelfDevelop ? [] : (dbJson as unknown as INavProps[]),
 )
 
 export const component = signal<IComponentProps>(
