@@ -6,7 +6,7 @@ import { Component } from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { CommonModule } from '@angular/common'
 import { $t } from 'src/locale'
-import { setNavs, emitDataChanged } from 'src/utils/web'
+import { setNavs, emitDataChanged, commitNavs } from 'src/utils/web'
 import { navs } from '../../store'
 import { INavTwoProp, INavThreeProp, IWebProps } from '../../types'
 import { NzMessageService } from 'ng-zorro-antd/message'
@@ -199,11 +199,20 @@ export class MoveWebComponent {
         }
       }
 
-      setNavs(this.navs())
-      this.handleCancel()
-      if (!isSelfDevelop) {
-        emitDataChanged()
+      // 网站管理（#/system）走统一「保 存」；前端页面的移动立即同步远端
+      const inAdmin = String(globalThis.location?.hash || '').includes('/system')
+      if (inAdmin) {
+        setNavs(this.navs())
+        if (!isSelfDevelop) {
+          emitDataChanged()
+        }
+      } else {
+        commitNavs(this.navs(), 'move web')
+        if (!isSelfDevelop) {
+          event.emit('WEB_REFRESH')
+        }
       }
+      this.handleCancel()
     } catch (error: any) {
       this.message.error(error.message)
     }
