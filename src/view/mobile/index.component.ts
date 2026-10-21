@@ -42,8 +42,8 @@ import { debounceTime } from 'rxjs/operators'
 export default class MobileComponent implements OnDestroy {
   // 抽屉菜单开合状态
   open: boolean = false
-  // 抽屉里当前展开二级目录的一级分类 id
-  expandedOneId = 0
+  // 抽屉里已展开的下级分类 id 集合（支持任意层级）
+  expandedIds: Set<number> = new Set()
 
   // 整页数据：所有一级分类（已过滤「仅自己可见」）
   pageList: INavProps[] = []
@@ -109,22 +109,75 @@ export default class MobileComponent implements OnDestroy {
   // 点击一级行：收起抽屉，右侧滚动到该分类区域
   handleCilckNav(one: INavProps) {
     this.open = false
-    this.expandedOneId = 0
     this.scrollTo(`m-one-${one.id}`)
   }
 
-  // 点击行尾展开图标：展开/收起该分类的二级目录
-  toggleExpand(oneId: number, evt: Event) {
-    evt.stopPropagation()
-    this.expandedOneId = this.expandedOneId === oneId ? 0 : oneId
+  // ===== 抽屉分类树（递归） =====
+
+  // 是否存在下级分类（网址不算分类）
+  hasSubCats(node: any): boolean {
+    return Array.isArray(node?.nav) && node.nav.some((n: any) => !n.url)
   }
 
-  // 点击抽屉里的二级目录：切换区域内容，收起抽屉并滚动
-  handleClickTwo(one: INavProps, two: INavTwoProp) {
-    this.selectedTwo = { ...this.selectedTwo, [one.id]: two.id }
-    this.syncIndex(one.id, two.id)
+  // 取下级分类列表
+  subCats(node: any): any[] {
+    return (node?.nav || []).filter((n: any) => !n.url)
+  }
+
+  isExpanded(id: number): boolean {
+    return this.expandedIds.has(id)
+  }
+
+  // 点击箭头：展开/收起该分类的下级（不影响其他已展开项）
+  toggleCat(id: number, evt: Event) {
+    evt.stopPropagation()
+    const next = new Set(this.expandedIds)
+    if (next.has(id)) {
+      next.delete(id)
+    } else {
+      next.add(id)
+    }
+    this.expandedIds = next
+  }
+
+  // 在分类子树中查找目标 id，返回祖先链（含自身）；找不到返回 null
+  private findPath(list: any[], targetId: number): any[] | null {
+    for (const n of list || []) {
+      if (n.id === targetId) return [n]
+      const sub = this.findPath(n.nav, targetId)
+      if (sub) return [n, ...sub]
+    }
+    return null
+  }
+
+  // 抽屉分类高亮：自身是被选中的二级，或是被选中二级的祖先
+  isActiveCat(one: INavProps, cat: any): boolean {
+    const activeId = this.getActiveTwoId(one)
+    if (!activeId) return false
+    if (cat.id === activeId) return true
+    const path = this.findPath([cat], activeId)
+    return !!path && path.length > 1
+  }
+
+  // 点击抽屉里任意层级的分类：选中其所属二级 → 收起抽屉 → 滚动到该分类区域
+  handleClickCat(one: INavProps, cat: any) {
+    let two: any = cat
+    const walk = (list: any[], trail: any[]): boolean => {
+      for (const n of list || []) {
+        if (n.id === cat.id) {
+          // 挂在一级下的第一个祖先就是要选中的二级（cat 本身是二级时取自身）
+          two = trail[0] || n
+          return true
+        }
+        if (Array.isArray(n.nav) && walk(n.nav, trail.length ? [...trail, n] : [n])) {
+          return true
+        }
+      }
+      return false
+    }
+    walk(one.nav || [], [])
+    this.selectTwo(one, two)
     this.open = false
-    this.expandedOneId = 0
     this.scrollTo(`m-one-${one.id}`)
   }
 

@@ -200,14 +200,6 @@ export async function updateFileContent({
     branch,
     content: isEncode ? encode(content) : content,
   }
-  if (isGitLab) {
-    params['commit_message'] = commitMessage
-    params['encoding'] = 'base64'
-  } else {
-    const fileInfo = await getFileContent(path, branch)
-    params['message'] = commitMessage
-    params['sha'] = fileInfo.data.sha
-  }
 
   const url = isGitLab
     ? `/projects/${getLabProjectId()}/repository/files/${encodeURIComponent(
@@ -215,10 +207,42 @@ export async function updateFileContent({
       )}`
     : `/repos/${authorName}/${repoName}/contents/${path}`
 
-  return http.put(url, params).then((res) => {
-    requestActionUrl()
-    return res
-  })
+  if (isGitLab) {
+    params['commit_message'] = commitMessage
+    params['encoding'] = 'base64'
+    return http.put(url, params).then((res) => {
+      requestActionUrl()
+      return res
+    })
+  }
+
+  // GitHub：提交需携带文件当前 sha。刚提交过一次后 GitHub 会短暂返回
+  // 旧 sha（最终一致性），连续两次保存就会撞 409 "does not match"。
+  // 这里改为失败自动重取最新 sha 重试（最多 3 次），对用户无感。
+  params['message'] = commitMessage
+  let lastError: any
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 1200 * attempt))
+    }
+    try {
+      const fileInfo = await getFileContent(path, branch)
+      params['sha'] = fileInfo.data.sha
+      const res = await http.put(url, params)
+      requestActionUrl()
+      return res
+    } catch (e: any) {
+      lastError = e
+      const msg =
+        String(e?.message || '') + String(e?.response?.status || '')
+      // 仅 sha 冲突值得重试，其余错误（网络/权限）直接抛出
+      if (msg.includes('409') || msg.includes('does not match')) {
+        continue
+      }
+      throw e
+    }
+  }
+  throw lastError
 }
 
 export function createEmptyCommit() {

@@ -33,28 +33,56 @@
           <span class="drawer-row-title ellipsis">{{ one.title }}</span>
           <span
             class="expand-arrow"
-            *ngIf="one.nav?.length"
-            [class.expanded]="expandedOneId === one.id"
-            (click)="toggleExpand(one.id, $event)"
+            *ngIf="hasSubCats(one)"
+            [class.expanded]="isExpanded(one.id)"
+            (click)="toggleCat(one.id, $event)"
           >›</span>
         </div>
 
-        <!-- 展开的二级目录 -->
-        <div class="drawer-children" *ngIf="expandedOneId === one.id && one.nav?.length">
-          <div
-            class="drawer-child"
-            *ngFor="let two of one.nav; trackBy: commonService.trackByItem"
-            [class.active]="getActiveTwoId(one) === two.id"
-            (click)="handleClickTwo(one, two)"
-          >
-            {{ two.title }}
-          </div>
+        <!-- 递归展开下级分类（支持二级、三级及更深） -->
+        <div class="drawer-children" *ngIf="isExpanded(one.id) && hasSubCats(one)">
+          <ng-container
+            *ngTemplateOutlet="
+              drawerLevel;
+              context: { $implicit: subCats(one), one: one, depth: 2 }
+            "
+          ></ng-container>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- 顶部固定栏 -->
+  <!-- 抽屉分类递归模板：点击分类跳转，点箭头展开/收起下级 -->
+  <ng-template #drawerLevel let-children let-one="one" let-depth="depth">
+    <div
+      class="drawer-cat"
+      *ngFor="let cat of children; trackBy: commonService.trackByItem"
+    >
+      <div
+        class="drawer-row"
+        (click)="handleClickCat(one, cat)"
+        [class.cat-active]="isActiveCat(one, cat)"
+      >
+        <span class="drawer-row-title ellipsis">{{ cat.title }}</span>
+        <span
+          class="expand-arrow"
+          *ngIf="hasSubCats(cat)"
+          [class.expanded]="isExpanded(cat.id)"
+          (click)="toggleCat(cat.id, $event)"
+        >›</span>
+      </div>
+      <div class="drawer-sub" *ngIf="isExpanded(cat.id) && hasSubCats(cat)">
+        <ng-container
+          *ngTemplateOutlet="
+            drawerLevel;
+            context: { $implicit: subCats(cat), one: one, depth: depth + 1 }
+          "
+        ></ng-container>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- 顶部固定栏：左侧菜单按钮 / 中间图标+站名 / 右侧登录 -->
   <header class="header dark-bg-gary dark-shadow">
     <div class="header-top dark-border-color">
       <div class="open" [class.active]="open" (click)="open = !open">
@@ -62,7 +90,12 @@
         <i></i>
         <i></i>
       </div>
-      <img [src]="commonService.settings().favicon" class="logo" alt="logo" />
+      <div class="header-brand">
+        <img [src]="commonService.settings().favicon" class="logo" alt="logo" />
+        <span class="header-name ellipsis">{{
+          commonService.settings().sideTitle || commonService.title()
+        }}</span>
+      </div>
       <app-access-login class="header-access" />
     </div>
   </header>

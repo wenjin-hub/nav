@@ -33,11 +33,26 @@ $bg-color: #fbfbfb;
         z-index: 1102;
       }
 
-      .logo {
-        display: inline-block;
-        width: 40px;
-        height: 40px;
-        pointer-events: none;
+      // 中间品牌位：图标 + 站名（左侧汉堡、右侧登录绝对定位，不占中间空间）
+      .header-brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        max-width: 62%;
+
+        .logo {
+          width: 30px;
+          height: 30px;
+          flex-shrink: 0;
+          pointer-events: none;
+        }
+
+        .header-name {
+          font-size: 17px;
+          font-weight: 700;
+          color: #1f2329;
+          white-space: nowrap;
+        }
       }
     }
 
@@ -235,6 +250,23 @@ $bg-color: #fbfbfb;
       padding: 0 10px 4px 22px;
     }
 
+    // 更深层级的递归分类列表逐级缩进
+    .drawer-sub {
+      padding-left: 18px;
+    }
+
+    .drawer-cat {
+      .drawer-row {
+        font-size: 14px;
+        padding: 9px 12px;
+      }
+      &.cat-active > .drawer-row,
+      .drawer-row.cat-active {
+        color: #20a0ff;
+        font-weight: 600;
+      }
+    }
+
     .drawer-child {
       padding: 10px 12px;
       margin: 2px 0;
@@ -338,11 +370,20 @@ $bg-color: #fbfbfb;
       color: #58a6ff;
       background: rgba(88, 166, 255, 0.15);
     }
+    .drawer-cat .drawer-row.cat-active {
+      color: #58a6ff;
+    }
     .drawer-child {
       color: #969ca4;
       &.active {
         color: #58a6ff;
       }
+    }
+  }
+
+  .header {
+    .header-brand .header-name {
+      color: #c9d1d9;
     }
   }
 }
