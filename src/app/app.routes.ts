@@ -5,6 +5,17 @@ import SimComponent from 'src/view/sim/index.component'
 import SideComponent from 'src/view/side/index.component'
 import ShortcutComponent from 'src/view/shortcut/index.component'
 import MobileComponent from 'src/view/mobile/index.component'
+import SystemWebComponent from 'src/view/system/web/index.component'
+import SystemSettingComponent from 'src/view/system/setting/index.component'
+import SystemTagComponent from 'src/view/system/tag/index.component'
+import SystemSearchComponent from 'src/view/system/search/index.component'
+import SystemBookmarkComponent from 'src/view/system/bookmark/index.component'
+import SystemBookmarkExportComponent from 'src/view/system/bookmark-export/index.component'
+import SystemCollectComponent from 'src/view/system/collect/index.component'
+import SystemAuthComponent from 'src/view/system/auth/index.component'
+import SystemInfoComponent from 'src/view/system/info/index.component'
+import SystemComponentComponent from 'src/view/system/component/index.component'
+import SystemConfigComponent from 'src/view/system/config/index.component'
 import { isSelfDevelop } from 'src/utils/utils'
 import { getDefaultTheme } from 'src/utils'
 
@@ -45,52 +56,52 @@ export const routes: Routes = [
   {
     path: 'system',
     loadComponent: () => import('src/view/system/index.component'),
+    // 后台子页面全部静态引入：随主框架一次加载，
+    // 切换菜单不再依赖网络加载代码块（弱网下会「点了没反应」）
     children: [
       {
         path: 'info',
-        loadComponent: () => import('src/view/system/info/index.component'),
+        component: SystemInfoComponent,
       },
       {
         path: 'bookmark',
-        loadComponent: () => import('src/view/system/bookmark/index.component'),
+        component: SystemBookmarkComponent,
       },
       {
         path: 'bookmarkExport',
-        loadComponent: () =>
-          import('src/view/system/bookmark-export/index.component'),
+        component: SystemBookmarkExportComponent,
       },
       {
         path: 'collect',
-        loadComponent: () => import('src/view/system/collect/index.component'),
+        component: SystemCollectComponent,
       },
       {
         path: 'auth',
-        loadComponent: () => import('src/view/system/auth/index.component'),
+        component: SystemAuthComponent,
       },
       {
         path: 'tag',
-        loadComponent: () => import('src/view/system/tag/index.component'),
+        component: SystemTagComponent,
       },
       {
         path: 'search',
-        loadComponent: () => import('src/view/system/search/index.component'),
+        component: SystemSearchComponent,
       },
       {
         path: 'setting',
-        loadComponent: () => import('src/view/system/setting/index.component'),
+        component: SystemSettingComponent,
       },
       {
         path: 'component',
-        loadComponent: () =>
-          import('src/view/system/component/index.component'),
+        component: SystemComponentComponent,
       },
       {
         path: 'web',
-        loadComponent: () => import('src/view/system/web/index.component'),
+        component: SystemWebComponent,
       },
       {
         path: 'config',
-        loadComponent: () => import('src/view/system/config/index.component'),
+        component: SystemConfigComponent,
       },
       {
         path: '**',

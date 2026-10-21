@@ -41,6 +41,12 @@ function findUnclassifiedData(roolDL: Element): IWebProps[] {
 interface BookmarkParseResult {
   message?: string
   data?: INavProps[]
+  report?: {
+    newCategories: number
+    newWebs: number
+    existCategories: number
+    existWebs: number
+  }
 }
 
 export function parseBookmark(
@@ -132,12 +138,8 @@ export function parseBookmark(
             if (DL3) {
               const unclassifiedData = findUnclassifiedData(DL3)
               if (unclassifiedData.length > 0) {
-                twoLevel.nav.push({
-                  id: (id += 1),
-                  title,
-                  icon: '',
-                  nav: unclassifiedData,
-                })
+                // 未分组的网址直接挂到二级分类下（不再包同名三级壳）
+                ;(twoLevel.nav as any[]).push(...unclassifiedData)
               }
               processThreeLevel(DL3, twoLevel)
             }
@@ -168,19 +170,13 @@ export function parseBookmark(
           if (DL) {
             const unclassifiedData = findUnclassifiedData(DL)
             if (unclassifiedData.length > 0) {
+              // 直挂网址只包一层二级分类（网址直挂二级，不再嵌套同名三级壳）
               oneLevel.nav.push({
                 id: (id += 1),
                 title,
                 icon: '',
-                nav: [
-                  {
-                    id: (id += 1),
-                    title,
-                    icon: '',
-                    nav: unclassifiedData,
-                  },
-                ],
-              })
+                nav: unclassifiedData,
+              } as any)
             }
             processTwoLevel(DL, oneLevel)
           }
@@ -190,6 +186,7 @@ export function parseBookmark(
 
     const unclassifiedData = findUnclassifiedData(roolDL)
     if (unclassifiedData.length > 0) {
+      // 只包一层二级分类（网址直挂二级，不再嵌套同名三级壳）
       data.push({
         id: (id += 1),
         title: $t('_uncategorized'),
@@ -199,15 +196,8 @@ export function parseBookmark(
             id: (id += 1),
             title: $t('_uncategorized'),
             icon: '',
-            nav: [
-              {
-                id: (id += 1),
-                title: $t('_uncategorized'),
-                icon: '',
-                nav: unclassifiedData,
-              },
-            ],
-          },
+            nav: unclassifiedData,
+          } as any,
         ],
       })
     }
@@ -232,24 +222,67 @@ export function parseBookmark(
   }
   collectUrls(copyWebList)
 
-  function r(data: any[], list: any[]) {
-    for (let i = 0; i < data.length; i++) {
-      const item = data[i] as any
-      const title = (item.title || removeTrailingSlashes(item.url)).trim()
-      const idx = list.findIndex(
-        (e) => (e.title || removeTrailingSlashes(e.url)).trim() === title,
-      )
+  const report = {
+    newCategories: 0,
+    newWebs: 0,
+    existCategories: 0,
+    existWebs: 0,
+  }
 
-      if (idx !== -1) {
-        // 同名分类：递归合并子内容
-        if (Array.isArray(item.nav)) {
-          r(item.nav, list[idx].nav)
+  // 分类按「祖先链路径」统计（每个导入文件夹只计一次，避免同名嵌套重复计数）
+  const existingCatPaths = new Set<string>()
+  const walkCatPaths = (list: any[], prefix: string[]) => {
+    for (const n of list) {
+      if (n.url) continue
+      const p = [...prefix, String(n.title || '').trim()]
+      existingCatPaths.add(p.join('/'))
+      if (Array.isArray(n.nav)) walkCatPaths(n.nav, p)
+    }
+  }
+  walkCatPaths(copyWebList, [])
+
+  const seenCatPaths = new Set<string>()
+  const seenImportUrls = new Set<string>()
+  const countWalk = (list: any[], prefix: string[]) => {
+    for (const n of list) {
+      if (n.url) {
+        const u = normUrl(n.url)
+        if (seenImportUrls.has(u)) continue
+        seenImportUrls.add(u)
+        if (existingUrls.has(u)) {
+          report.existWebs++
+        } else {
+          report.newWebs++
         }
         continue
       }
+      const p = [...prefix, String(n.title || '').trim()]
+      const key = p.join('/')
+      if (!seenCatPaths.has(key)) {
+        seenCatPaths.add(key)
+        // 与父级同名的结构性包装层不计入分类数
+        const isSameNameWrapper =
+          prefix.length > 0 &&
+          String(n.title || '').trim() === prefix[prefix.length - 1]
+        if (!isSameNameWrapper) {
+          if (existingCatPaths.has(key)) {
+            report.existCategories++
+          } else {
+            report.newCategories++
+          }
+        }
+      }
+      if (Array.isArray(n.nav)) countWalk(n.nav, p)
+    }
+  }
+  countWalk(data, [])
+
+  // 合并：网址按 URL 去重，分类按标题同名合并
+  function r(data: any[], list: any[]) {
+    for (let i = 0; i < data.length; i++) {
+      const item = data[i] as any
 
       if (item.url) {
-        // 网站：全树 URL 已存在则跳过（保留原有名称/描述），否则新增
         const url = normUrl(item.url)
         if (!existingUrls.has(url)) {
           list.push(item)
@@ -258,12 +291,23 @@ export function parseBookmark(
         continue
       }
 
-      if (item.title) {
-        // 新分类
-        list.push(item)
+      if (!item.title) continue
+      const title = item.title.trim()
+      const idx = list.findIndex(
+        (e) => !e.url && (e.title || '').trim() === title,
+      )
+      if (idx !== -1) {
+        if (Array.isArray(item.nav)) {
+          r(item.nav, list[idx].nav)
+        }
+        continue
+      }
+      list.push(item)
+      if (Array.isArray(item.nav)) {
+        r(item.nav, (list[list.length - 1] as any).nav)
       }
     }
   }
   r(data, copyWebList)
-  return copyWebList
+  return { data: copyWebList, report }
 }

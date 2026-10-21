@@ -4,7 +4,8 @@
 import event from 'src/utils/mitt'
 import localforage from 'localforage'
 import navConfig from '../../nav.config.json'
-import { updateFileContent } from 'src/api'
+import dbJson from '../../data/db.json'
+import { updateFileContent, getRemoteDb } from 'src/api'
 import { isLogin, isAccessUnlocked } from './user'
 import { IWebProps, INavProps } from '../types'
 import { navs } from 'src/store'
@@ -14,6 +15,35 @@ import { queryString, getClassById } from './index'
 import { $t } from 'src/locale'
 import { filterLoginData, dfsNavs } from './pureUtils'
 
+// 后台热更新：初始渲染完成后拉取线上仓库最新数据。
+// 站长在网站上点「保存」→ 提交 GitHub → 任何设备刷新页面即可拿到最新数据，
+// 不再依赖 Cloudflare 重新构建（构建经常滞后甚至不触发）。
+function backgroundRefresh() {
+  if (isSelfDevelop) return
+  if (!isLogin && !isAccessUnlocked()) return
+  setTimeout(async () => {
+    try {
+      const remote = await getRemoteDb()
+      if (!remote || !Array.isArray(remote) || remote.length === 0) return
+      const bundledStr = JSON.stringify(dbJson)
+      const remoteStr = JSON.stringify(remote)
+      // 线上与打包数据一致，无需更新
+      if (remoteStr === bundledStr) return
+      const cached: any = await localforage.getItem(STORAGE_KEY_MAP.WEBSITE)
+      if (cached) {
+        const cachedStr = JSON.stringify(cached)
+        // 本机有未同步的修改（既不等于打包数据也不等于线上）→ 不覆盖，等用户点「保存」
+        if (cachedStr !== bundledStr && cachedStr !== remoteStr) return
+      }
+      setNavs(remote)
+      navs.set(filterLoginData(remote, isLogin || isAccessUnlocked()))
+      event.emit('WEB_REFRESH')
+    } catch {
+      // 静默失败，不打扰用户
+    }
+  }, 3000)
+}
+
 export async function getNavs() {
   if (isSelfDevelop) {
     return
@@ -22,6 +52,7 @@ export async function getNavs() {
     navs.set(navsData)
     event.emit('WEB_FINISH')
     window.__FINISHED__ = true
+    backgroundRefresh()
   }
   // 访客通过访问密码解锁后，与登录用户一样可见全部数据
   const data = filterLoginData(navs(), isLogin || isAccessUnlocked())

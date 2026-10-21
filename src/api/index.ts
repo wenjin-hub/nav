@@ -228,6 +228,44 @@ export function createEmptyCommit() {
   })
 }
 
+// 拉取线上仓库最新的 db.json（不依赖 Cloudflare 重建）：
+// 登录用户带令牌走 GitHub API（无缓存、即时最新）；访客走 raw / CDN 兜底
+export async function getRemoteDb(): Promise<any | null> {
+  const bust = `t=${Date.now()}`
+  if (isLogin && !getIsGitee(config.gitRepoUrl) && !getIsGitLab(config.gitRepoUrl)) {
+    try {
+      const res: any = await http.get(
+        `/repos/${authorName}/${repoName}/contents/${DB_PATH}?ref=${DEFAULT_BRANCH}&${bust}`,
+      )
+      const content = String(res?.data?.content || '').replace(/\s/g, '')
+      if (content) {
+        const raw = atob(content)
+        const json = LZString.decompressFromBase64(raw.trim())
+        if (json) return JSON.parse(json)
+      }
+    } catch {
+      // 走兜底
+    }
+  }
+  const rawUrls = [
+    `https://raw.githubusercontent.com/${authorName}/${repoName}/${DEFAULT_BRANCH}/${DB_PATH}?${bust}`,
+    `https://cdn.jsdelivr.net/gh/${authorName}/${repoName}@${DEFAULT_BRANCH}/${DB_PATH}?${bust}`,
+    `https://fastly.jsdelivr.net/gh/${authorName}/${repoName}@${DEFAULT_BRANCH}/${DB_PATH}?${bust}`,
+  ]
+  for (const u of rawUrls) {
+    try {
+      const res = await fetch(u, { cache: 'no-store' })
+      if (!res.ok) continue
+      const text = (await res.text()).trim()
+      const json = LZString.decompressFromBase64(text)
+      if (json) return JSON.parse(json)
+    } catch {
+      // 尝试下一个源
+    }
+  }
+  return null
+}
+
 export async function createImageFile({
   message,
   content,

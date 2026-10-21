@@ -111,7 +111,7 @@ export class AccessLoginComponent implements AfterViewInit {
         content: JSON.stringify(cleanWebAttrs(navs())),
         path: DB_PATH,
       })
-      this.message.success('已同步到仓库，Cloudflare 重建后全设备生效（约 1-3 分钟）')
+      this.message.success('已同步到仓库，所有设备刷新页面即可生效（约几秒）')
     } catch (e: any) {
       this.message.error('同步失败：' + (e?.message || '未知错误'))
     } finally {

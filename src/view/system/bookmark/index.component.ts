@@ -7,6 +7,7 @@ import { $t } from 'src/locale'
 import { NzNotificationService } from 'ng-zorro-antd/notification'
 import { NzMessageService } from 'ng-zorro-antd/message'
 import { NzButtonModule } from 'ng-zorro-antd/button'
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal'
 import { setNavs } from 'src/utils/web'
 import { parseBookmark } from 'src/utils/bookmark'
 import { NzInputModule } from 'ng-zorro-antd/input'
@@ -23,7 +24,7 @@ function esc(s: string): string {
 
 @Component({
   standalone: true,
-  imports: [NzInputModule, NzButtonModule],
+  imports: [NzInputModule, NzButtonModule, NzModalModule],
   selector: 'system-bookmark',
   templateUrl: './index.component.html',
   styleUrls: ['./index.component.scss'],
@@ -36,6 +37,7 @@ export default class SystemBookmarkComponent {
   constructor(
     private message: NzMessageService,
     private notification: NzNotificationService,
+    private modal: NzModalService,
   ) {}
 
   ngOnInit() {}
@@ -108,15 +110,30 @@ export default class SystemBookmarkComponent {
       const html = this.result as string
       try {
         const result = parseBookmark(html)
-        if (!Array.isArray(result)) {
+        if (!Array.isArray(result) && !result?.data) {
           that.notification.error(
             $t('_errorBookTip'),
             `${result?.message ?? ''}`,
           )
         } else {
-          that.message.success($t('_importSuccess'))
-          setNavs(result)
-          setTimeout(() => window.location.reload(), 2000)
+          const { data, report } = result as any
+          setNavs(data)
+          const r = report || {
+            newCategories: 0,
+            newWebs: 0,
+            existCategories: 0,
+            existWebs: 0,
+          }
+          that.modal.info({
+            nzTitle: '导入成功',
+            nzOkText: '知道了（刷新页面）',
+            nzContent: `本次共导入 ${r.newCategories + r.existCategories} 个分类、${
+              r.newWebs + r.existWebs
+            } 个网址；其中新增 ${r.newCategories} 个分类、${r.newWebs} 个网址；${
+              r.existCategories
+            } 个分类、${r.existWebs} 个网址已存在，不进行重复添加。` + '\n\n请到「网站管理」点「保 存」同步到线上。',
+            nzOnOk: () => window.location.reload(),
+          })
         }
       } catch (error: any) {
         that.notification.error($t('_errorBookTip'), `${error.message}`)

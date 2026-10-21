@@ -68,6 +68,11 @@ export default class SystemComponent {
         event instanceof NavigationError
       ) {
         this.pageLoading = false
+        // 菜单高亮跟随路由（避免停留在旧菜单上）
+        if (event instanceof NavigationEnd) {
+          const u = this.router.url.split('?')[0].split('/')
+          this.currentMenu = u.at(-1) || ''
+        }
       }
     })
   }

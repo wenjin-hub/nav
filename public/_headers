@@ -1,0 +1,14 @@
+# Cloudflare Pages 缓存规则
+# 带内容哈希的静态资源长缓存，HTML 每次校验保证发版即生效
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/*.webmanifest
+  Cache-Control: public, max-age=3600
