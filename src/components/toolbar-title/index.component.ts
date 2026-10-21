@@ -11,6 +11,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon'
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm'
 import { $t } from 'src/locale'
 import { isSelfDevelop } from 'src/utils/utils'
+import { emitDataChanged } from 'src/utils/web'
 import { CommonService } from 'src/services/common'
 import event from 'src/utils/mitt'
 
@@ -56,7 +57,7 @@ export class ToolbarTitleWebComponent {
       data: this.dataSource,
       onOk: () => {
         if (!isSelfDevelop) {
-          event.emit('WEB_REFRESH')
+          emitDataChanged()
         }
       },
     })

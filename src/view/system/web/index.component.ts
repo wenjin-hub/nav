@@ -12,7 +12,11 @@ import { isLogin, removeWebsite } from 'src/utils/user'
 import { NzMessageService } from 'ng-zorro-antd/message'
 import { NzModalService } from 'ng-zorro-antd/modal'
 import { NzNotificationService } from 'ng-zorro-antd/notification'
-import { setNavs } from 'src/utils/web'
+import {
+  setNavs,
+  isDbDirty,
+  markDbDirty,
+} from 'src/utils/web'
 import { updateFileContent } from 'src/api'
 import {
   DB_PATH,
@@ -83,6 +87,8 @@ export default class WebpComponent {
   ) {
     // 新增/编辑弹窗提交、删除等任何数据变更 → 标记待保存（远端需点「保 存」同步）
     event.on('WEB_REFRESH', () => (this.dirty = true))
+    // 恢复进入本页之前已产生的未保存改动标记（如书签导入后跳转过来）
+    this.dirty = isDbDirty()
   }
 
   // ===== 节点获取 =====
@@ -604,6 +610,7 @@ export default class WebpComponent {
           )
           .then(() => {
             this.dirty = false
+            markDbDirty(false)
             this.message.success($t('_syncSuccessTip'))
           })
           .catch((e: any) => {

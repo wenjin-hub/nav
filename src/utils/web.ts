@@ -15,6 +15,25 @@ import { queryString, getClassById } from './index'
 import { $t } from 'src/locale'
 import { filterLoginData, dfsNavs } from './pureUtils'
 
+// 全局脏标记：任何会修改数据的操作（导入书签/编辑/删除/移动）后为 true，
+// 点「保 存」同步成功后复位。放在模块级而不是网站管理组件里，
+// 避免「先在别的页面改动、之后才进入网站管理」时监听者还没创建、标记丢失。
+let dbDirty = false
+
+export function markDbDirty(v: boolean) {
+  dbDirty = v
+}
+
+export function isDbDirty() {
+  return dbDirty
+}
+
+// 数据变更统一出口：标记待保存 + 广播各页面刷新
+export function emitDataChanged() {
+  markDbDirty(true)
+  event.emit('WEB_REFRESH')
+}
+
 // 后台热更新：初始渲染完成后拉取线上仓库最新数据。
 // 站长在网站上点「保存」→ 提交 GitHub → 任何设备刷新页面即可拿到最新数据，
 // 不再依赖 Cloudflare 重新构建（构建经常滞后甚至不触发）。
@@ -159,7 +178,7 @@ export async function deleteByIds(
     await setNavs(navsData)
     if (!isSelfDevelop) {
       navs.set(navsData)
-      event.emit('WEB_REFRESH')
+      emitDataChanged()
     }
   }
   return hasDelete
@@ -184,7 +203,7 @@ export function updateByWeb(oldId: number, newData: IWebProps) {
   navs.set(navsData)
   setNavs(navsData)
   if (!isSelfDevelop) {
-    event.emit('WEB_REFRESH')
+    emitDataChanged()
   }
   return ok
 }
@@ -241,7 +260,7 @@ export function pushDataByAny(parentId: number, data: any): boolean {
   navs.set(navsData)
   setNavs(navsData)
   if (!isSelfDevelop) {
-    event.emit('WEB_REFRESH')
+    emitDataChanged()
   }
   return ok
 }

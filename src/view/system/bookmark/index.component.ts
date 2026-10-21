@@ -8,7 +8,7 @@ import { NzNotificationService } from 'ng-zorro-antd/notification'
 import { NzMessageService } from 'ng-zorro-antd/message'
 import { NzButtonModule } from 'ng-zorro-antd/button'
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal'
-import { setNavs } from 'src/utils/web'
+import { setNavs, emitDataChanged } from 'src/utils/web'
 import { parseBookmark } from 'src/utils/bookmark'
 import { NzInputModule } from 'ng-zorro-antd/input'
 import { navs } from 'src/store'
@@ -117,7 +117,11 @@ export default class SystemBookmarkComponent {
           )
         } else {
           const { data, report } = result as any
+          // 三步缺一不可：写本机缓存 + 更新内存信号 + 标记待保存并广播刷新
+          // （网站管理页直接读 navs 信号，只写缓存会导致页面看不到新增内容）
           setNavs(data)
+          navs.set(data as any)
+          emitDataChanged()
           const r = report || {
             newCategories: 0,
             newWebs: 0,
@@ -126,13 +130,12 @@ export default class SystemBookmarkComponent {
           }
           that.modal.info({
             nzTitle: '导入成功',
-            nzOkText: '知道了（刷新页面）',
+            nzOkText: '知道了',
             nzContent: `本次共导入 ${r.newCategories + r.existCategories} 个分类、${
               r.newWebs + r.existWebs
             } 个网址；其中新增 ${r.newCategories} 个分类、${r.newWebs} 个网址；${
               r.existCategories
-            } 个分类、${r.existWebs} 个网址已存在，不进行重复添加。` + '\n\n请到「网站管理」点「保 存」同步到线上。',
-            nzOnOk: () => window.location.reload(),
+            } 个分类、${r.existWebs} 个网址已存在，不进行重复添加。` + '\n\n新增内容已出现在「网站管理」中，请到「网站管理」点「保 存」同步到线上。',
           })
         }
       } catch (error: any) {

@@ -6,7 +6,7 @@ import { Component } from '@angular/core'
 import { FormsModule } from '@angular/forms'
 import { CommonModule } from '@angular/common'
 import { $t } from 'src/locale'
-import { setNavs } from 'src/utils/web'
+import { setNavs, emitDataChanged } from 'src/utils/web'
 import { navs } from '../../store'
 import { INavTwoProp, INavThreeProp, IWebProps } from '../../types'
 import { NzMessageService } from 'ng-zorro-antd/message'
@@ -202,7 +202,7 @@ export class MoveWebComponent {
       setNavs(this.navs())
       this.handleCancel()
       if (!isSelfDevelop) {
-        event.emit('WEB_REFRESH')
+        emitDataChanged()
       }
     } catch (error: any) {
       this.message.error(error.message)

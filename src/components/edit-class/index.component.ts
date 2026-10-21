@@ -26,7 +26,7 @@ import { UploadImageComponent } from 'src/components/upload-image/index.componen
 import { $t } from 'src/locale'
 import { NzMessageService } from 'ng-zorro-antd/message'
 import { navs } from 'src/store'
-import { setNavs, updateByClass, pushDataByAny } from 'src/utils/web'
+import { setNavs, updateByClass, pushDataByAny, emitDataChanged } from 'src/utils/web'
 import { getClassById } from 'src/utils/index'
 import { getTempId, isSelfDevelop } from 'src/utils/utils'
 import event from 'src/utils/mitt'
@@ -144,7 +144,7 @@ export class EditClassComponent {
     this.onOk.emit(params)
     this.onCancel()
     if (!isSelfDevelop) {
-      event.emit('WEB_REFRESH')
+      emitDataChanged()
     }
   }
 }

@@ -302,9 +302,12 @@ export function parseBookmark(
         }
         continue
       }
-      list.push(item)
+      // 新分类：先挂一个空壳再递归并入子级（URL 全局去重），
+      // 不能整棵 push 后再对自身递归——那样每个新网址会被重复添加两份
+      const clone: any = { ...item, nav: [] }
+      list.push(clone)
       if (Array.isArray(item.nav)) {
-        r(item.nav, (list[list.length - 1] as any).nav)
+        r(item.nav, clone.nav)
       }
     }
   }
