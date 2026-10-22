@@ -1,7 +1,8 @@
 $bg-color: #fbfbfb;
 
 .app-page {
-  padding: 45px 0 0 0;
+  // 与 header 高度严格一致：顶部固定栏下面直接接搜索模块，不留缝
+  padding: 48px 0 0 0;
   min-height: 100vh;
   background: #f6f6f6;
   overflow: hidden;
@@ -12,47 +13,72 @@ $bg-color: #fbfbfb;
     top: 0;
     left: 0;
     right: 0;
+    height: 48px;
     text-align: center;
     background-color: $bg-color;
-    box-shadow: 0 0 3px #ccc;
+    // 无阴影无边框：与下方搜索大图无缝衔接
 
     .header-top {
       position: relative;
-      border-bottom: 1px solid #eee;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 5px 0;
 
       ::ng-deep .header-access {
         position: absolute;
         right: 10px;
-        top: 12px;
+        top: 9px;
         // 不能用 transform 定位：transform 祖先会让内部 position:fixed
         // 的登录弹窗改为相对本元素定位，导致弹窗跑到右上角被裁剪
         z-index: 1102;
+
+        // 登录/编辑等按钮压成纯图标（与左侧汉堡按钮风格一致）
+        .access-btn {
+          background: transparent;
+          border: none;
+          padding: 5px;
+          color: #555;
+          &:hover {
+            color: #1677ff;
+            background: transparent;
+            border: none;
+          }
+          .access-btn-text {
+            display: none;
+          }
+          svg,
+          .anticon {
+            font-size: 19px;
+          }
+        }
+      }
+    }
+
+    // 中间品牌位：绝对定位正中（不随两侧按钮宽度偏移）
+    // 注：transform 只作用于本元素，内部无 fixed 子元素，安全
+    .header-brand {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      max-width: 58%;
+
+      .logo {
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        pointer-events: none;
       }
 
-      // 中间品牌位：图标 + 站名（左侧汉堡、右侧登录绝对定位，不占中间空间）
-      .header-brand {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        max-width: 62%;
-
-        .logo {
-          width: 30px;
-          height: 30px;
-          flex-shrink: 0;
-          pointer-events: none;
-        }
-
-        .header-name {
-          font-size: 17px;
-          font-weight: 700;
-          color: #1f2329;
-          white-space: nowrap;
-        }
+      .header-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2329;
+        white-space: nowrap;
       }
     }
 

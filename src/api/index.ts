@@ -156,8 +156,13 @@ export function getFileContent(path: string, branch: string = DEFAULT_BRANCH) {
   return http.get(`/repos/${authorName}/${repoName}/contents/${path}`, {
     params: {
       ref: branch,
+      // 时间戳绕过浏览器缓存：GitHub 该接口响应带 max-age=60，
+      // 刚提交完立刻重取会拿到缓存的旧 sha，导致 409 重试全部落空
+      _: Date.now(),
     },
-  })
+    // 由调用方（updateFileContent）统一做友好提示，拦截器不再弹原始错误
+    suppressToast: true,
+  } as any)
 }
 
 type Iupdate = {
@@ -216,27 +221,30 @@ export async function updateFileContent({
     })
   }
 
-  // GitHub：提交需携带文件当前 sha。刚提交过一次后 GitHub 会短暂返回
-  // 旧 sha（最终一致性），连续两次保存就会撞 409 "does not match"。
-  // 这里改为失败自动重取最新 sha 重试（最多 3 次），对用户无感。
+  // GitHub：提交需携带文件当前 sha。两个坑都踩过：
+  // 1) 刚提交后 GET 会短暂返回旧 sha（最终一致性 + 浏览器缓存 max-age=60）
+  // 2) 连续保存时第二次 PUT 携带旧 sha 撞 409 "does not match"。
+  // 破解：409 的报错信息里就带着当前正确 sha（fc00246f...），
+  // 直接解析出来重试；GET 也加时间戳绕过缓存双保险。最多重试 4 次。
   params['message'] = commitMessage
   let lastError: any
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) {
-      await new Promise((r) => setTimeout(r, 1200 * attempt))
-    }
+  for (let attempt = 0; attempt < 4; attempt++) {
     try {
-      const fileInfo = await getFileContent(path, branch)
-      params['sha'] = fileInfo.data.sha
-      const res = await http.put(url, params)
+      if (attempt === 0) {
+        const fileInfo = await getFileContent(path, branch)
+        params['sha'] = fileInfo.data.sha
+      }
+      const res = await http.put(url, params, { suppressToast: true } as any)
       requestActionUrl()
       return res
     } catch (e: any) {
       lastError = e
-      const msg =
-        String(e?.message || '') + String(e?.response?.status || '')
-      // 仅 sha 冲突值得重试，其余错误（网络/权限）直接抛出
-      if (msg.includes('409') || msg.includes('does not match')) {
+      const msg = String(e?.response?.data?.message || e?.message || '')
+      const matched = msg.match(/does not match\s+"?([0-9a-f]{40})"?/i)
+      if (matched) {
+        // GitHub 直接告诉我们当前正确的 sha，用它重试
+        params['sha'] = matched[1]
+        await new Promise((r) => setTimeout(r, 500))
         continue
       }
       throw e

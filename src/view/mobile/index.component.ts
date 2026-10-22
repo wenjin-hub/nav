@@ -184,10 +184,10 @@ export default class MobileComponent implements OnDestroy {
   scrollTo(id: string) {
     const el = document.getElementById(id)
     if (!el) return
-    // 平滑滚动期间暂停 scroll-spy（顶部固定头高约 50px）
+    // 平滑滚动期间暂停 scroll-spy（顶部固定头高 48px）
     this.disableScrollEvent = true
     clearTimeout(this.scrollTimer)
-    const top = el.getBoundingClientRect().top + window.scrollY - 58
+    const top = el.getBoundingClientRect().top + window.scrollY - 52
     window.scrollTo({ top, behavior: 'smooth' })
     this.scrollTimer = setTimeout(() => {
       this.disableScrollEvent = false

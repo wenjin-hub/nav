@@ -78,17 +78,21 @@ httpInstance.interceptors.response.use(
     return res
   },
   function (error) {
-    const status =
-      error.status || error.response?.data?.status || error.code || ''
-    const errorMsg = error.response?.data?.message || error.message || ''
-    event.emit('NOTIFICATION', {
-      type: 'error',
-      title: 'Error：' + status,
-      content: errorMsg,
-      config: {
-        nzDuration: document.hidden ? 0 : 5000,
-      },
-    })
+    // suppressToast：调用方（如 db.json 提交的重试链路）自行做友好提示，
+    // 拦截器不再对每次中间失败弹原始错误气泡
+    if (!error?.config?.suppressToast) {
+      const status =
+        error.status || error.response?.data?.status || error.code || ''
+      const errorMsg = error.response?.data?.message || error.message || ''
+      event.emit('NOTIFICATION', {
+        type: 'error',
+        title: 'Error：' + status,
+        content: errorMsg,
+        config: {
+          nzDuration: document.hidden ? 0 : 5000,
+        },
+      })
+    }
     stopLoad()
     return Promise.reject(error)
   },
