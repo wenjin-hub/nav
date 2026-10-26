@@ -15,7 +15,7 @@ import { NoDataComponent } from 'src/components/no-data/no-data.component'
 import { LogoComponent } from 'src/components/logo/logo.component'
 import { AccessLoginComponent } from 'src/components/access-login/index.component'
 import { filterLoginData } from 'src/utils/pureUtils'
-import { isLogin } from 'src/utils/user'
+import { isLogin, isAccessUnlocked } from 'src/utils/user'
 import type { INavProps, INavThreeProp, INavTwoProp } from 'src/types'
 import event from 'src/utils/mitt'
 import { Subscription, fromEvent } from 'rxjs'
@@ -74,7 +74,11 @@ export default class MobileComponent implements OnDestroy {
   }
 
   buildPage() {
-    this.pageList = filterLoginData(this.commonService.navs(), isLogin)
+    // 与 side 主题一致：管理员登录「或」访问密码解锁后，均可看到仅个人可见的分类
+    this.pageList = filterLoginData(
+      this.commonService.navs(),
+      isLogin || isAccessUnlocked(),
+    )
   }
 
   // 获取某一级分类当前展示的二级分类 id（未手动选择过时默认第一个）

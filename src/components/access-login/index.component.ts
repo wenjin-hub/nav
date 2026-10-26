@@ -17,6 +17,7 @@ import {
   isLogin,
 } from 'src/utils/user'
 import { editMode, navs } from 'src/store'
+import { isMobile } from 'src/utils'
 import { updateFileContent } from 'src/api'
 import { DB_PATH } from 'src/constants'
 import { cleanWebAttrs } from 'src/utils/pureUtils'
@@ -39,6 +40,9 @@ export class AccessLoginComponent implements AfterViewInit {
   readonly isUnlocked = isAccessUnlocked()
   readonly isLogin = isLogin
   readonly editMode = editMode
+  // 手机端没有鼠标悬停，编辑模式（悬停编辑/移动/删除）无法使用，
+  // 隐藏编辑/保存按钮，解锁后仅显示「退出」
+  readonly isMobileDevice = isMobile()
   open = false
   loading = false
   saving = false
