@@ -79,6 +79,8 @@ export default class WebpComponent {
   dragIds: number[] = []
   dragKind: RowKind | '' = ''
   dropTargetId = -1
+  // 行内落点提示：pos=before/after 显示插入线，pos=into 整行高亮（移入文件夹）
+  dropHint: { id: number; pos: 'before' | 'after' | 'into' } | null = null
 
   constructor(
     private modal: NzModalService,
@@ -265,12 +267,14 @@ export default class WebpComponent {
     this.dragIds = []
     this.dragKind = ''
     this.dropTargetId = -1
+    this.dropHint = null
   }
 
   // 任意层级的分类节点都接受网址/分类拖入（防止移入自身子树由 moveInto 里的 hasRef 处理）
   onDragOverNode(node: any, e: DragEvent) {
     if (!this.dragKind || this.dragKind === 'one') return
     e.preventDefault()
+    this.dropHint = null
     this.dropTargetId = node.id
   }
 
@@ -283,10 +287,11 @@ export default class WebpComponent {
     this.moveInto(leaf.nav)
   }
 
-  // 拖到右侧面板头部 = 放入当前目录
+  // 拖到右侧面板 = 放入当前目录
   onDragOverPanel(e: DragEvent) {
     if (!this.dragKind || this.dragKind === 'one') return
     e.preventDefault()
+    this.dropHint = null
     this.dropTargetId = -2 // -2 表示面板放置区
   }
 
@@ -298,57 +303,48 @@ export default class WebpComponent {
     this.moveInto(target)
   }
 
-  // 拖到某一行上 = 排序到该行之前
+  // 行内落点判定（over 与 drop 用同一套规则，保证「所见即所得」）：
+  // 文件夹行：上半 = 排到该行之前（插入线），下半 = 移入该文件夹（整行高亮）
+  // 网址行：上半 = 排到该行之前，下半 = 排到该行之后（插入线）
+  computeDropPos(item: any, e: DragEvent): 'before' | 'after' | 'into' {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const ratio = rect.height ? (e.clientY - rect.top) / rect.height : 0
+    if (!item.url) {
+      return ratio < 0.5 ? 'before' : 'into'
+    }
+    return ratio < 0.5 ? 'before' : 'after'
+  }
+
   onDragOverRow(item: any, e: DragEvent) {
     if (!this.dragKind) return
     e.preventDefault()
     e.stopPropagation()
-    this.dropTargetId = item.id
+    this.dropHint = { id: item.id, pos: this.computeDropPos(item, e) }
   }
 
   onDropRow(item: any, e: DragEvent) {
     e.preventDefault()
     e.stopPropagation()
     if (!this.dragIds.length) return
-    const targetIsWeb = !!item.url
-    const dragIsWeb = this.dragKind === 'web'
+    const pos = this.computeDropPos(item, e)
+    const loc = this.locate(item.id)
+    if (!loc) return
+    const sameList = this.dragIds.every((id) =>
+      loc.list.some((x) => x.id === id),
+    )
 
-    // 目标行是文件夹（无论拖的是网址还是分类）→ 放入该文件夹
-    if (!targetIsWeb) {
-      // 同级文件夹行上排序：拖的项就在同一个列表里时按排序处理
-      const loc0 = this.locate(item.id)
-      if (
-        !dragIsWeb &&
-        loc0 &&
-        this.dragIds.every((id) => loc0.list.some((x) => x.id === id))
-      ) {
-        this.moveBefore(item.id)
-        return
-      }
+    // 文件夹下半区 → 移入该文件夹
+    if (pos === 'into') {
       const leaf = this.resolveLeaf(item)
-      if (leaf?.nav) {
-        this.moveInto(leaf.nav)
-        return
-      }
-    }
-
-    // 目标行是网址：
-    if (dragIsWeb) {
-      const loc = this.locate(item.id)
-      if (!loc) return
-      // 同一列表内 → 排序到该行之前
-      if (this.dragIds.every((id) => loc.list.some((x) => x.id === id))) {
-        this.moveBefore(item.id)
-        return
-      }
-      // 跨列表 → 移动到该行所在容器
-      this.moveInto(loc.list)
+      if (leaf?.nav) this.moveInto(leaf.nav)
       return
     }
-
-    // 分类拖到网址行上 → 放入该行所在容器
-    const loc = this.locate(item.id)
-    if (loc) this.moveInto(loc.list)
+    // before/after → 插入到该行前/后（同列表排序，跨列表移动到对应位置）
+    if (sameList) {
+      this.moveRelative(item.id, pos)
+    } else {
+      this.moveIntoAt(loc.list, item.id, pos)
+    }
   }
 
   // ===== 移动实现 =====
@@ -418,10 +414,12 @@ export default class WebpComponent {
     return findTitle(this.navs()) || '目标目录'
   }
 
-  moveBefore(targetId: number) {
+  // 同一列表内排序：把拖动项插到目标行之前/之后（结果与落点指示完全一致）
+  moveRelative(targetId: number, pos: 'before' | 'after') {
     const tLoc = this.locate(targetId)
     if (!tLoc) return
     const list = tLoc.list
+    const before = JSON.stringify(list)
     let tIndex = tLoc.index
     const items: any[] = []
     for (const id of this.dragIds) {
@@ -431,36 +429,59 @@ export default class WebpComponent {
       list.splice(idx, 1)
       if (idx < tIndex) tIndex--
     }
-    if (items.length) {
-      list.splice(tIndex, 0, ...items)
+    const insertAt = pos === 'before' ? tIndex : tIndex + 1
+    list.splice(insertAt, 0, ...items)
+    // 顺序没变化就不提示、不标脏
+    if (JSON.stringify(list) !== before) {
       this.touch()
       this.message.success('排序已更新，未保存，可继续操作')
     }
     this.onDragEnd()
   }
 
-  // ===== 新增 / 编辑 / 删除 =====
-  // 当前面板是否按「网址容器」对待（穿透包裹层 / 三级 / 已含网址的目录）
-  get isWebPanel(): boolean {
-    if (this.rightKind === 'web') return true
-    // 目录里已经混有网址 → 也按网址容器处理
-    return this.rightList.some((i: any) => i.url)
+  // 跨列表移动：插到目标列表某一行之前/之后（而不是只能排到末尾）
+  moveIntoAt(targetList: any[], anchorId: number, pos: 'before' | 'after') {
+    const anchorIdx = targetList.findIndex((x) => x.id === anchorId)
+    if (anchorIdx === -1) {
+      this.moveInto(targetList)
+      return
+    }
+    let insertAt = pos === 'before' ? anchorIdx : anchorIdx + 1
+    let moved = 0
+    for (const id of this.dragIds) {
+      const loc = this.locate(id)
+      if (!loc || loc.list === targetList) continue
+      const item = loc.list[loc.index]
+      // 防止把文件夹移进它自己的子级
+      if (!item.url && this.hasRef(item, targetList)) continue
+      loc.list.splice(loc.index, 1)
+      targetList.splice(insertAt, 0, item)
+      insertAt++
+      moved++
+    }
+    if (moved) {
+      this.touch()
+      this.message.success(
+        `已移动 ${moved} 项到「${this.dropTargetName(targetList)}」，未保存，可继续操作`,
+      )
+    }
+    this.onDragEnd()
+    this.checked.clear()
   }
 
-  openCreate() {
-    if (this.isWebPanel) {
-      event.emit('CREATE_WEB', { parentId: this.currentLeafId })
+  // ===== 新增 / 编辑 / 删除 =====
+  // 新增网址：放进当前浏览的目录（未选中任何目录时按钮置灰）
+  openCreateWeb() {
+    event.emit('CREATE_WEB', { parentId: this.currentLeafId })
+  }
+
+  // 新增分类：放进当前浏览的目录；根目录视图 = 新建一级分类
+  openCreateClass() {
+    if (!this.selectedNode) {
+      event.emit('EDIT_CLASS_OPEN', {})
       return
     }
-    if (this.rightKind === 'three') {
-      event.emit('EDIT_CLASS_OPEN', { id: this.selTwoId })
-      return
-    }
-    if (this.rightKind === 'two') {
-      event.emit('EDIT_CLASS_OPEN', { id: this.selOneId })
-      return
-    }
-    event.emit('EDIT_CLASS_OPEN', {})
+    event.emit('EDIT_CLASS_OPEN', { id: this.currentLeafId })
   }
 
   openEdit(item: any) {
